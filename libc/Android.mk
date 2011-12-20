@@ -414,8 +414,8 @@ libc_common_src_files += \
 	arch-arm/bionic/armv7/memset.S \
 	arch-arm/bionic/armv7/bzero.S \
 	arch-arm/bionic/armv7/strchr.S \
-	arch-arm/bionic/armv7/strcpy.c \
-	arch-arm/bionic/armv7/strlen.S
+	arch-arm/bionic/strcpy.S \
+	arch-arm/bionic/strlen-armv7.S
 else
 libc_common_src_files += \
 	string/memchr.c \
