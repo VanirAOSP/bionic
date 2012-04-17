@@ -58,8 +58,7 @@ freopen(const char *file, const char *mode, FILE *fp)
 		return (NULL);
 	}
 
-	if (!__sdidinit)
-		__sinit();
+	__check_sdidinit();
 
 	FLOCKFILE(fp);
 
