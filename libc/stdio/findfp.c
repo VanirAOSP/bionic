@@ -37,6 +37,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <bionic_atomic_inline.h>
 #include "local.h"
 #include "glue.h"
 #include "thread_private.h"
@@ -114,9 +115,18 @@ __sfp(void)
 
 	_THREAD_PRIVATE_MUTEX_LOCK(__sfp_mutex);
 	for (g = &__sglue; g != NULL; g = g->next) {
-		for (fp = g->iobs, n = g->niobs; --n >= 0; fp++)
-			if (fp->_flags == 0)
+		for (fp = g->iobs, n = g->niobs; --n >= 0; fp++) {
+			short __flags = fp->_flags;
+			/*
+			 * We need memory read barrier here which is pairing
+			 * barrier with the one in fclose to make sure:
+			 * Once we see fp->_flags value is 0 on any cpu, we
+			 * know the fp releasing is fully done.
+			 */
+			ANDROID_MEMBAR_FULL();
+			if (__flags == 0)
 				goto found;
+		}
 	}
 
 	/* release lock while mallocing */
