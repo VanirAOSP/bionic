@@ -54,7 +54,10 @@
 @ ---------------------------------------------------------------------------
 	.thumb_func
 	.p2align 4,,15
-ENTRY(memset)
+
+ENTRY(bzero)
+	mov     r2, r1
+	mov     r1, #0
 	@ r0 = address
 	@ r1 = character
 	@ r2 = count
@@ -116,4 +119,4 @@ ENTRY(memset)
 
 10:
 	bx	lr		@ goodbye
-END(memset)
+END(bzero)
