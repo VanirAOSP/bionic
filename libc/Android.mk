@@ -404,13 +404,22 @@ libc_arch_dynamic_src_files := \
 ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
 libc_common_src_files += \
 	arch-arm/bionic/armv7/memchr.S \
-	arch-arm/bionic/armv7/memcpy.S \
-	arch-arm/bionic/armv7/memset.S \
 	arch-arm/bionic/armv7/strchr.S \
 	arch-arm/bionic/armv7/strcpy.c \
-	arch-arm/bionic/armv7/strlen.S \
+	arch-arm/bionic/armv7/strlen.S
+
+ifeq ($(USE_ALL_OPTIMIZED_STRING_FUNCS),true)
+libc_common_src_files += \
+	arch-arm/bionic/armv7/memcpy.S \
+	arch-arm/bionic/armv7/memset.S \
 	arch-arm/bionic/armv7/bzero.S
-else
+else  #!USE_ALL_OPTIMIZED_STRING_FUNCS
+libc_common_src_files += \
+	arch-arm/bionic/memcpy.S \
+	arch-arm/bionic/memset.S
+endif # !USE_ALL_OPTIMIZED_STRING_FUNCS
+
+else  # !ARCH_ARM_HAVE_ARMV7A
 libc_common_src_files += \
 	string/memchr.c \
 	arch-arm/bionic/memcpy.S \
@@ -418,7 +427,7 @@ libc_common_src_files += \
 	string/strchr.c \
 	arch-arm/bionic/strcpy.S \
 	arch-arm/bionic/strlen.c.arm
-endif
+endif # !ARCH_ARM_HAVE_ARMV7A
 
 else # !arm
 
