@@ -4638,7 +4638,24 @@ size_t dlmalloc_usable_size(void* mem) {
   if (mem != 0) {
     mchunkptr p = mem2chunk(mem);
     if (cinuse(p))
-      return chunksize(p) - overhead_for(p);
+#if footers
+        mstate fm = get_mstate_for(p);
+		if (!ok_magic(fm)) {
+			USAGE_ERROR_ACTION(fm, p);
+			return;
+		}
+#else /* FOOTERS */
+#define fm gm
+#endif
+
+		if (!PREACTION(fm)) {
+		  if (cinuse(p)) {
+			size_t ret = chunksize(p) - overhead_for(p);
+			POSTACTION(fm);
+			return ret;
+		  }
+		  POSTACTION(fm);
+		}
   }
   return 0;
 }
