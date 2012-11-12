@@ -1208,9 +1208,6 @@ _cache_flush_locked( Cache*  cache )
         }
     }
 
-    // flush pending request
-    _cache_flush_pending_requests_locked(cache);
-
     cache->mru_list.mru_next = cache->mru_list.mru_prev = &cache->mru_list;
     cache->num_entries       = 0;
     cache->last_id           = 0;
@@ -1597,7 +1594,6 @@ _resolv_cache_add( struct resolv_cache*  cache,
     _cache_dump_mru(cache);
 #endif
 Exit:
-    _cache_notify_waiting_tid_locked(cache, key);
     pthread_mutex_unlock( &cache->lock );
 }
 
