@@ -44,6 +44,8 @@ __BEGIN_DECLS
 #define MREMAP_MAYMOVE  1
 #define MREMAP_FIXED    2
 
+#define MADV_MERGEABLE 12
+
 extern void*  mmap(void *, size_t, int, int, int, off_t);
 extern int    munmap(void *, size_t);
 extern int    msync(const void *, size_t, int);
