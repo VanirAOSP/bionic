@@ -376,7 +376,12 @@ static void malloc_init_impl() {
         }
     }
 
-    // Lets see which .so must be loaded for the requested debug level
+    // mksh is way too leaky. http://b/7291287.
+    if (debug_level >= 10 && strcmp(__progname, "sh") == 0) {
+        return;
+    }
+
+    // Choose the appropriate .so for the requested debug level.
     switch (debug_level) {
         case 1:
         case 5:
