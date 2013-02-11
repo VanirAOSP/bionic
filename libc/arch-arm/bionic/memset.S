@@ -39,11 +39,6 @@
     .fpu    neon
 #endif
 
-ENTRY(bzero)
-        mov     r2, r1
-        mov     r1, #0
-END(bzero)
-
 ENTRY(memset)
 #if defined(__ARM_NEON__)
 
