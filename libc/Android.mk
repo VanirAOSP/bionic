@@ -577,6 +577,25 @@ ifeq ($(TARGET_ARCH),arm)
   ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
     libc_common_cflags += -DNEON_UNALIGNED_ACCESS -DNEON_MEMCPY_ALIGNMENT_DIVIDER=224
   endif
+  ifeq ($(ARCH_ARM_HAVE_NEON_UNALIGNED_ACCESS),true)
+    libc_common_cflags += -DNEON_UNALIGNED_ACCESS
+  endif
+  ifneq ($(ARCH_ARM_NEON_MEMCPY_ALIGNMENT_DIVIDER),)
+    libc_common_cflags += -DNEON_MEMCPY_ALIGNMENT_DIVIDER=$(ARCH_ARM_NEON_MEMCPY_ALIGNMENT_DIVIDER)
+  endif
+  ifneq ($(ARCH_ARM_NEON_MEMSET_DIVIDER),)
+    libc_common_cflags += -DNEON_MEMSET_DIVIDER=$(ARCH_ARM_NEON_MEMSET_DIVIDER)
+  endif
+else # !arm
+  ifeq ($(TARGET_ARCH),x86)
+    libc_crt_target_cflags :=
+    ifeq ($(ARCH_X86_HAVE_SSE2),true)
+        libc_crt_target_cflags += -DUSE_SSE2=1
+    endif
+    ifeq ($(ARCH_X86_HAVE_SSSE3),true)
+        libc_crt_target_cflags += -DUSE_SSSE3=1
+    endif
+  endif # x86
 endif # !arm
 
 ifeq ($(TARGET_ARCH),x86)
