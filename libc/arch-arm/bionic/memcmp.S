@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008, 2011 The Android Open Source Project
- * Copyright (C) 2010 ST-Ericsson SA
+ * Copyright (C) 2008 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,39 +29,26 @@
 #include <machine/cpu-features.h>
 #include <machine/asm.h>
 
-/*
- * Optimized memcmp() for ARM9 and Cortex-A9
- */
 
-#if __ARM_ARCH__ >= 7
-#define __ARM_CORTEX
-
-#if defined(CORTEX_CACHE_LINE_32)
+#ifdef HAVE_32_BYTE_CACHE_LINE
 #define CACHE_LINE_SIZE     32
 #else
 #define CACHE_LINE_SIZE     64
 #endif
 
-#endif /* __ARM_ARCH__ */
+/*
+ * Optimized memcmp() for Cortex-A9.
+ */
 
 ENTRY(memcmp)
-#if defined(__ARM_CORTEX)
         pld         [r0, #(CACHE_LINE_SIZE * 0)]
         pld         [r0, #(CACHE_LINE_SIZE * 1)]
-#else
-        PLD         (r0, #0)
-        PLD         (r1, #0)
-#endif
 
         /* take of the case where length is 0 or the buffers are the same */
         cmp         r0, r1
-#if !defined(__ARM_CORTEX)
-        cmpne       r2, #0
-#endif
         moveq       r0, #0
         bxeq        lr
 
-#if defined(__ARM_CORTEX)
         pld         [r1, #(CACHE_LINE_SIZE * 0)]
         pld         [r1, #(CACHE_LINE_SIZE * 1)]
 
@@ -71,30 +57,64 @@ ENTRY(memcmp)
          */
         cmp        r2, #(8+4)
         bmi        10f
-#endif /* __ARM_CORTEX */
+/*
+ * Neon optimization
+ * Comparing 32 bytes at a time
+ */
+#if defined(__ARM_NEON__) && defined(NEON_UNALIGNED_ACCESS)
+        subs        r2, r2, #32
+        blo         3f
+
+        /* preload all the cache lines we need. */
+        pld         [r0, #(CACHE_LINE_SIZE * 2)]
+        pld         [r1, #(CACHE_LINE_SIZE * 2)]
+
+1:      /* The main loop compares 32 bytes at a time */
+        vld1.8      {d0 - d3}, [r0]!
+        pld         [r0, #(CACHE_LINE_SIZE * 2)]
+        vld1.8      {d4 - d7}, [r1]!
+        pld         [r1, #(CACHE_LINE_SIZE * 2)]
+
+        /* Start subtracting the values and merge results */
+        vsub.i8     q0, q2
+        vsub.i8     q1, q3
+        vorr        q2, q0, q1
+        vorr        d4, d5
+        vmov        r3, ip, d4
+        /* Check if there are any differences among the 32 bytes */
+        orrs        r3, ip
+        bne         2f
+        subs        r2, r2, #32
+        bhs         1b
+        b           3f
+2:
+        /* Check if the difference was in the first or last 16 bytes */
+        sub         r0, #32
+        vorr        d0, d1
+        sub         r1, #32
+        vmov        r3, ip, d0
+        orrs        r3, ip
+        /* if the first 16 bytes are equal, we only have to rewind 16 bytes */
+        ittt        eq
+        subeq       r2, #16
+        addeq       r0, #16
+        addeq       r1, #16
+
+3:      /* fix-up the remaining count */
+        add         r2, r2, #32
+
+        cmp        r2, #(8+4)
+        bmi        10f
+#endif
 
         .save {r4, lr}
         /* save registers */
         stmfd       sp!, {r4, lr}
 
-#if !defined(__ARM_CORTEX)
-        PLD         (r0, #32)
-        PLD         (r1, #32)
-#endif
-
         /* since r0 hold the result, move the first source
          * pointer somewhere else
          */
-         
          mov        r4, r0
-
-#if !defined(__ARM_CORTEX)
-         /* make sure we have at least 8+4 bytes, this simplify things below
-          * and avoid some overhead for small blocks
-          */
-         cmp        r2, #(8+4)
-         bmi        8f
-#endif
 
         /* align first pointer to word boundary
          * offset = -src & 3
@@ -132,14 +152,8 @@ ENTRY(memcmp)
         subs        r2, r2, #(32 + 4)
         bmi         1f
         
-0:
-#if defined(__ARM_CORTEX)
-        pld         [r4, #(CACHE_LINE_SIZE * 2)]
+0:      pld         [r4, #(CACHE_LINE_SIZE * 2)]
         pld         [r1, #(CACHE_LINE_SIZE * 2)]
-#else
-        PLD         (r4, #64)
-        PLD         (r1, #64)
-#endif
         ldr         r0, [r4], #4
         ldr         lr, [r1, #4]!
         eors        r0, r0, ip
@@ -206,7 +220,6 @@ ENTRY(memcmp)
         ldmfd       sp!, {r4, lr}
         bx          lr
 
-#if defined(__ARM_CORTEX)
 10:     /* process less than 12 bytes */
         cmp         r2, #0
         moveq       r0, #0
@@ -220,10 +233,7 @@ ENTRY(memcmp)
         subs        r2, r2, #1
         bne         11b
         bx          lr
-#endif /* __ARM_CORTEX */
 END(memcmp)
-
-
 
 
 
@@ -243,14 +253,8 @@ END(memcmp)
         bic         r1, r1, #3
         ldr         lr, [r1], #4
 
-6:
-#if defined(__ARM_CORTEX)
-        pld         [r1, #(CACHE_LINE_SIZE * 2)]
+6:      pld         [r1, #(CACHE_LINE_SIZE * 2)]
         pld         [r4, #(CACHE_LINE_SIZE * 2)]
-#else
-        PLD         (r1, #64)
-        PLD         (r4, #64)
-#endif
         mov         ip, lr, lsr #16
         ldr         lr, [r1], #4
         ldr         r0, [r4], #4
@@ -291,13 +295,13 @@ END(memcmp)
 
 4:      /*************** offset is 1 or 3 (less optimized) ***************/
 
-		stmfd		sp!, {r5, r6, r7}
+        stmfd        sp!, {r5, r6, r7}
 
         // r5 = rhs
         // r6 = lhs
         // r7 = scratch
 
-        mov         r5, r0, lsl #3		/* r5 = right shift */
+        mov         r5, r0, lsl #3        /* r5 = right shift */
         rsb         r6, r5, #32         /* r6 = left shift */
 
         /* align the unaligned pointer */
@@ -320,7 +324,7 @@ END(memcmp)
         bhs         6b
 
         sub         r1, r1, r6, lsr #3
-		ldmfd       sp!, {r5, r6, r7}
+        ldmfd       sp!, {r5, r6, r7}
 
         /* are we done? */
         adds        r2, r2, #8
@@ -335,5 +339,5 @@ END(memcmp)
         sub         r1, r1, r6, lsr #3
         sub         r4, r4, #4
         mov         r2, #4
-		ldmfd		sp!, {r5, r6, r7}
+        ldmfd       sp!, {r5, r6, r7}
         b           8b
