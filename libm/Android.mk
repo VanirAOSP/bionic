@@ -161,14 +161,23 @@ ifeq ($(TARGET_ARCH),arm)
 	src/s_scalbn.c \
 	src/s_scalbnf.c \
 	src/e_sqrtf.c
-	
-ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
-    libm_common_src_files += \
-      arm/e_pow.S
+
+# need to test build with a non-neon device to make sure everything is
+# kosher for bionic passover.  if the build fails it will be because 170
+# needs to be set back to ARMv7 and the FPU/VFP cflags in armv7-a-neon are
+# not specific enough for newer chipsets in the arm7-a neon arch
+
+ifeq ($(ARCH_ARM_HAVE_VFP_D32),true)
+  libm_common_src_files += \
+	arm/e_pow.S
 endif
 
   libm_common_includes = $(LOCAL_PATH)/arm
-endif
+else #[ifeq ($(TARGET_ARCH),arm)]
+  libm_common_src_files += \
+	src/s_cos.c \
+	src/s_sin.c
+endif #[ifeq ($(TARGET_ARCH),arm)]
 
 ifeq ($(TARGET_OS)-$(TARGET_ARCH),linux-x86)
   libm_common_src_files += \
