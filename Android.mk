@@ -16,4 +16,8 @@
 
 LOCAL_PATH := $(call my-dir)
 
+ifeq ($(TARGET_CPU_VARIANT),)
+TARGET_CPU_VARIANT := $(TARGET_ARCH_VARIANT_CPU)
+endif
+
 include $(call all-subdir-makefiles)
