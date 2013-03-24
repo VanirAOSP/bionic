@@ -176,9 +176,9 @@ static void thr_timer_table_start_stop(thr_timer_table_t* t, int stop) {
   if (t == NULL) {
     return;
   }
-
+  int nn;
   pthread_mutex_lock(&t->lock);
-  for (int nn = 0; nn < MAX_THREAD_TIMERS; ++nn) {
+  for (nn = 0; nn < MAX_THREAD_TIMERS; ++nn) {
     thr_timer_t*  timer  = &t->timers[nn];
     if (TIMER_ID_IS_VALID(timer->id)) {
       // Tell the thread to start/stop.
