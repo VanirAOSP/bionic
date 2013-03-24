@@ -419,8 +419,8 @@ extern "C" void chk_free(void *ptr) {
                        user(hdr));
             print_backtrace(bt, depth);
             /* Leak here so that we do not crash */
-            //dlfree(user(hdr));
         }
+        dlfree(user(hdr));
         abort();
     } else {
         hdr->freed_bt_depth = get_backtrace(hdr->freed_bt,
