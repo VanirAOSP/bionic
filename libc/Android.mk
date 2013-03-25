@@ -891,16 +891,24 @@ include $(CLEAR_VARS)
 # Since this code is experimental it is disabled by default.
 # see libc/bionic/pthread_debug.c for details
 
-LOCAL_CFLAGS := $(libc_common_cflags) -DPTHREAD_DEBUG -DPTHREAD_DEBUG_ENABLED=0
+LOCAL_CFLAGS := $(libc_common_cflags)
 LOCAL_C_INCLUDES := $(libc_common_c_includes)
+
+ifeq ($(PTHREAD_DEBUG),true)
+LOCAL_CFLAGS += -DPTHREAD_DEBUG -DPTHREAD_DEBUG_ENABLED=1
+endif
 
 LOCAL_SRC_FILES := \
 	$(libc_arch_dynamic_src_files) \
 	$(libc_static_common_src_files) \
 	bionic/dlmalloc.c \
 	bionic/malloc_debug_common.cpp \
-	bionic/pthread_debug.c \
 	bionic/libc_init_dynamic.c
+
+ifeq ($(PTHREAD_DEBUG),true)
+LOCAL_SRC_FILES += \
+  	bionic/pthread_debug.c
+endif
 
 ifeq ($(TARGET_ARCH),arm)
 	LOCAL_NO_CRT := true
