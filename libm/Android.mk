@@ -158,18 +158,9 @@ ifeq ($(TARGET_ARCH),arm)
 	src/s_scalbn.c \
 	src/s_scalbnf.c
 
-# need to test build with a non-neon device to make sure everything is
-# kosher for bionic passover.  if the build fails it will be because 170
-# needs to be set back to ARMv7 and the FPU/VFP cflags in armv7-a-neon are
-# not specific enough for newer chipsets in the arm7-a neon arch
-
-ifeq ($(ARCH_ARM_HAVE_VFP_D32),true)
-  libm_common_src_files += \
-	arm/e_pow.S
-endif
-
   ifeq ($(TARGET_USE_KRAIT_BIONIC_OPTIMIZATION),true)
     libm_common_src_files += \
+	  arm/e_pow.S \
 	  arm/s_cos.S \
 	  arm/s_sin.S \
 	  arm/e_sqrtf.S \
@@ -183,8 +174,13 @@ endif
 	  src/e_sqrt.c
   endif
 
-  libm_common_includes = $(LOCAL_PATH)/arm
+  ifeq ($(TARGET_USE_SPARROW_BIONIC_OPTIMIZATION),true)
+    libm_common_src_files += \
+	  arm/e_pow.S
+    libm_common_cflags += -DSPARROW_NEON_OPTIMIZATION
+  endif
 
+  libm_common_includes = $(LOCAL_PATH)/arm
 else
   libm_common_src_files += \
 	src/s_cos.c \
@@ -228,6 +224,8 @@ LOCAL_ARM_MODE := arm
 LOCAL_C_INCLUDES += $(libm_common_includes)
 LOCAL_CFLAGS := $(libm_common_cflags)
 
+LOCAL_CFLAGS:= $(libm_common_cflags)
+
 LOCAL_MODULE:= libm
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
 
@@ -247,6 +245,8 @@ LOCAL_ARM_MODE := arm
 
 LOCAL_C_INCLUDES += $(libm_common_includes)
 LOCAL_CFLAGS := $(libm_common_cflags)
+
+LOCAL_CFLAGS:= $(libm_common_cflags)
 
 LOCAL_MODULE:= libm
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
