@@ -49,7 +49,6 @@ int	__sread(void *, char *, int);
 int	__swrite(void *, const char *, int);
 fpos_t	__sseek(void *, fpos_t, int);
 int	__sclose(void *);
-void    __check_sdidinit(void);
 void	__sinit(void);
 void	_cleanup(void);
 void	__smakebuf(FILE *);
@@ -59,7 +58,11 @@ int	__swsetup(FILE *);
 int	__sflags(const char *, int *);
 int	__vfprintf(FILE *, const char *, __va_list);
 
-extern void __atexit_register_cleanup(void (*)(void));
+/*
+ * Function to clean up streams, called from abort() and exit().
+ */
+extern void (*__cleanup)(void);
+extern int __sdidinit;
 
 /*
  * Return true if the given FILE cannot be written now.
