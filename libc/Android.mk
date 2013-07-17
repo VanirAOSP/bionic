@@ -377,15 +377,43 @@ libc_common_src_files += \
 	arch-arm/bionic/tgkill.S \
 	arch-arm/bionic/memcmp.S \
 	arch-arm/bionic/memcmp16.S \
-	arch-arm/bionic/memcpy.S \
 	arch-arm/bionic/setjmp.S \
 	arch-arm/bionic/sigsetjmp.S \
+	arch-arm/bionic/strcpy.S \
 	arch-arm/bionic/strcmp.S \
 	arch-arm/bionic/syscall.S \
-	string/memmove.c.arm \
-	string/bcopy.c \
 	string/strncmp.c \
 	unistd/socketcalls.c
+
+# We have a special memcpy for A15 currently
+ifeq ($(TARGET_ARCH_VARIANT_CPU),cortex-a15)
+libc_common_src_files += arch-arm/bionic/memcpy-a15.S
+else
+libc_common_src_files += arch-arm/bionic/memcpy.S
+endif
+
+# Check if we want a neonized version of memmove instead of the
+# current ARM version
+ifeq ($(ARCH_ARM_HAVE_NEON),true)
+ libc_common_src_files += \
+	arch-arm/bionic/memmove.S
+ else # Other ARM
+ libc_common_src_files += \
+	string/bcopy.c \
+	string/memmove.c.arm
+endif # ARCH_ARM_HAVE_NEON
+
+# If the kernel supports kernel user helpers for gettimeofday, use
+# that instead.
+ifeq ($(KERNEL_HAS_GETTIMEOFDAY_HELPER),true)
+  libc_common_src_files := $(filter-out arch-arm/syscalls/gettimeofday.S,$(libc_common_src_files))
+  libc_common_src_files := $(filter-out arch-arm/syscalls/clock_gettime.S,$(libc_common_src_files))
+  libc_common_src_files += \
+	arch-arm/bionic/gettimeofday.c \
+	arch-arm/bionic/gettimeofday_syscall.S \
+	arch-arm/bionic/clock_gettime.c \
+	arch-arm/bionic/clock_gettime_syscall.S
+endif # KERNEL_HAS_GETTIMEOFDAY_HELPER
 
 # These files need to be arm so that gdbserver
 # can set breakpoints in them without messing
@@ -413,14 +441,12 @@ libc_common_src_files += \
 	arch-arm/bionic/armv7/memset.S \
 	arch-arm/bionic/armv7/bzero.S \
 	arch-arm/bionic/armv7/strchr.S \
-	arch-arm/bionic/strcpy.S \
 	arch-arm/bionic/strlen-armv7.S
 else
 libc_common_src_files += \
-	string/memchr.c \
+	arch-arm/bionic/memchr.S \
 	arch-arm/bionic/memset.S \
 	string/strchr.c \
-	arch-arm/bionic/strcpy.S \
 	arch-arm/bionic/strlen.c.arm
 endif
 
@@ -573,9 +599,6 @@ ifeq ($(TARGET_ARCH),arm)
   ifeq ($(ARCH_ARM_USE_NON_NEON_MEMCPY),true)
     libc_common_cflags += -DARCH_ARM_USE_NON_NEON_MEMCPY
   endif
-  ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
-    libc_common_cflags += -DNEON_UNALIGNED_ACCESS -DNEON_MEMCPY_ALIGNMENT_DIVIDER=224
-  endif
   ifeq ($(ARCH_ARM_HAVE_NEON_UNALIGNED_ACCESS),true)
     libc_common_cflags += -DNEON_UNALIGNED_ACCESS
   endif
@@ -584,6 +607,33 @@ ifeq ($(TARGET_ARCH),arm)
   endif
   ifneq ($(ARCH_ARM_NEON_MEMSET_DIVIDER),)
     libc_common_cflags += -DNEON_MEMSET_DIVIDER=$(ARCH_ARM_NEON_MEMSET_DIVIDER)
+  endif
+  # Add in defines to activate SCORPION_NEON_OPTIMIZATION
+  ifeq ($(TARGET_USE_SCORPION_BIONIC_OPTIMIZATION),true)
+    libc_common_cflags += -DSCORPION_NEON_OPTIMIZATION
+    ifeq ($(TARGET_USE_SCORPION_PLD_SET),true)
+      libc_common_cflags += -DPLDOFFS=$(TARGET_SCORPION_BIONIC_PLDOFFS)
+      libc_common_cflags += -DPLDSIZE=$(TARGET_SCORPION_BIONIC_PLDSIZE)
+    endif
+  endif
+  ifeq ($(TARGET_HAVE_TEGRA_ERRATA_657451),true)
+    libc_common_cflags += -DHAVE_TEGRA_ERRATA_657451
+  endif
+  # Add in defines to activate KRAIT_NEON_OPTIMIZATION
+  ifeq ($(TARGET_USE_KRAIT_BIONIC_OPTIMIZATION),true)
+    libc_common_cflags += -DKRAIT_NEON_OPTIMIZATION
+    ifeq ($(TARGET_USE_KRAIT_PLD_SET),true)
+      libc_common_cflags += -DPLDOFFS=$(TARGET_KRAIT_BIONIC_PLDOFFS)
+      libc_common_cflags += -DPLDTHRESH=$(TARGET_KRAIT_BIONIC_PLDTHRESH)
+      libc_common_cflags += -DPLDSIZE=$(TARGET_KRAIT_BIONIC_PLDSIZE)
+      libc_common_cflags += -DBBTHRESH=$(TARGET_KRAIT_BIONIC_BBTHRESH)
+    endif
+  endif
+  ifeq ($(TARGET_USE_SPARROW_BIONIC_OPTIMIZATION),true)
+    libc_common_cflags += -DSPARROW_NEON_OPTIMIZATION
+  endif
+  ifeq ($(TARGET_CORTEX_CACHE_LINE_32),true)
+    libc_common_cflags += -DCORTEX_CACHE_LINE_32
   endif
 else # !arm
   ifeq ($(TARGET_ARCH),x86)
