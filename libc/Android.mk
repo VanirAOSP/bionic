@@ -467,7 +467,8 @@ libc_common_cflags := \
     -I$(LOCAL_PATH)/private \
     -DPOSIX_MISTAKE \
     -DLOG_ON_HEAP_ERROR \
-    -Wall -Wextra
+    -Wall -Wextra \
+    -Wno-error=strict-aliasing
 
 # these macro definitions are required to implement the
 # 'timezone' and 'daylight' global variables, as well as
