@@ -136,16 +136,105 @@ const prop_info *__system_property_find_nth(unsigned n)
         return 0;
     } else {
         return TOC_TO_INFO(pa, pa->toc[n]);
+
+static void *to_prop_obj(prop_off_t off)
+{
+    if (off > pa_data_size)
+        return NULL;
+    if (!__system_property_area__)
+        return NULL;
+
+    return __system_property_area__->data + off;
+}
+
+static prop_bt *root_node()
+{
+    return to_prop_obj(0);
+}
+
+static int cmp_prop_name(const char *one, uint8_t one_len, const char *two,
+        uint8_t two_len)
+{
+    if (one_len < two_len)
+        return -1;
+    else if (one_len > two_len)
+        return 1;
+    else
+        return strncmp(one, two, one_len);
+}
+
+static prop_bt *find_prop_bt(prop_bt *bt, const char *name, uint8_t namelen,
+        bool alloc_if_needed)
+{
+    while (true) {
+        int ret;
+        if (!bt)
+            return bt;
+        ret = cmp_prop_name(name, namelen, bt->name, bt->namelen);
+
+        if (ret == 0) {
+            return bt;
+        } else if (ret < 0) {
+            if (bt->left) {
+                bt = to_prop_obj(bt->left);
+            } else {
+                if (!alloc_if_needed)
+                   return NULL;
+
+                bt = new_prop_bt(name, namelen, &bt->left);
+            }
+        } else {
+            if (bt->right) {
+                bt = to_prop_obj(bt->right);
+            } else {
+                if (!alloc_if_needed)
+                   return NULL;
+
+                bt = new_prop_bt(name, namelen, &bt->right);
+            }
+        }
     }
 }
 
 const prop_info *__system_property_find(const char *name)
 {
+
     prop_area *pa = __system_property_area__;
     unsigned count = pa->count;
     unsigned *toc = pa->toc;
     unsigned len = strlen(name);
     prop_info *pi;
+
+    const char *remaining_name = name;
+
+    if (!trie) return NULL;
+
+    while (true) {
+        char *sep = strchr(remaining_name, '.');
+        bool want_subtree = (sep != NULL);
+        uint8_t substr_size;
+
+        prop_bt *root;
+
+        if (want_subtree) {
+            substr_size = sep - remaining_name;
+        } else {
+            substr_size = strlen(remaining_name);
+        }
+
+        if (!substr_size)
+            return NULL;
+
+        if (trie->children) {
+            root = to_prop_obj(trie->children);
+        } else if (alloc_if_needed) {
+            root = new_prop_bt(remaining_name, substr_size, &trie->children);
+        } else {
+            root = NULL;
+        }
+
+        if (!root)
+            return NULL;
 
     while(count--) {
         unsigned entry = *toc++;
