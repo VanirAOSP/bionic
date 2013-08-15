@@ -134,7 +134,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := bionic-unit-tests-glibc
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
 LOCAL_CFLAGS += $(test_c_flags)
-LOCAL_LDFLAGS += -lpthread -ldl
+LOCAL_LDFLAGS += -lpthread -ldl -lrt
 LOCAL_LDFLAGS += $(test_dynamic_ldflags)
 LOCAL_SRC_FILES := $(test_src_files) $(test_dynamic_src_files)
 include $(BUILD_HOST_NATIVE_TEST)
