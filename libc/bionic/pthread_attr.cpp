@@ -30,12 +30,10 @@
 
 #include "pthread_internal.h"
 
-#define DEFAULT_STACK_SIZE (1024 * 1024)
-
 int pthread_attr_init(pthread_attr_t* attr) {
   attr->flags = 0;
   attr->stack_base = NULL;
-  attr->stack_size = DEFAULT_STACK_SIZE;
+  attr->stack_size = PTHREAD_STACK_SIZE_DEFAULT;
   attr->guard_size = PAGE_SIZE;
   attr->sched_policy = SCHED_NORMAL;
   attr->sched_priority = 0;
