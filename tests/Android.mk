@@ -75,6 +75,8 @@ test_src_files = \
     string_test.cpp \
     strings_test.cpp \
     stubs_test.cpp \
+    sys_stat_test.cpp \
+    system_properties_test.cpp \
     time_test.cpp \
     unistd_test.cpp \
 
@@ -98,11 +100,35 @@ include $(BUILD_NATIVE_TEST)
 include $(CLEAR_VARS)
 LOCAL_MODULE := bionic-unit-tests-static
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
-LOCAL_CFLAGS += $(test_c_flags)
 LOCAL_FORCE_STATIC_EXECUTABLE := true
-LOCAL_SRC_FILES := $(test_src_files)
+LOCAL_WHOLE_STATIC_LIBRARIES += libBionicTests
 LOCAL_STATIC_LIBRARIES += libstlport_static libstdc++ libm libc
 include $(BUILD_NATIVE_TEST)
+
+# -----------------------------------------------------------------------------
+# We build the static unit tests as a library so they can be used both for
+# bionic-unit-tests-static and also as part of CTS.
+# -----------------------------------------------------------------------------
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libBionicTests
+LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
+LOCAL_CFLAGS += $(test_c_flags)
+LOCAL_SRC_FILES := $(test_src_files)
+LOCAL_CFLAGS += \
+    -DGTEST_OS_LINUX_ANDROID \
+    -DGTEST_HAS_STD_STRING \
+
+LOCAL_C_INCLUDES += \
+    bionic bionic/libstdc++/include \
+    external/gtest/include \
+    external/stlport/stlport \
+
+LOCAL_WHOLE_STATIC_LIBRARIES := \
+    $(test_fortify_static_libraries) \
+    bionic-unit-tests-unwind-test-impl \
+
+include $(BUILD_STATIC_LIBRARY)
 
 # -----------------------------------------------------------------------------
 # Test library for the unit tests.
@@ -132,7 +158,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := bionic-unit-tests-glibc
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
 LOCAL_CFLAGS += $(test_c_flags)
-LOCAL_LDFLAGS += -lpthread -ldl
+LOCAL_LDFLAGS += -lpthread -ldl -lrt
 LOCAL_LDFLAGS += $(test_dynamic_ldflags)
 LOCAL_SRC_FILES := $(test_src_files) $(test_dynamic_src_files)
 include $(BUILD_HOST_NATIVE_TEST)

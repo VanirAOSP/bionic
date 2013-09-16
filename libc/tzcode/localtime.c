@@ -1878,12 +1878,14 @@ const struct state * sp; // android-changed: added sp
         } else  dir = tmcomp(&mytm, &yourtm);
         if (dir != 0) {
             if (t == lo) {
-                if (t == TIME_T_MAX)
+                if (t == time_t_max)
+
                     return WRONG;
                 ++t;
                 ++lo;
             } else if (t == hi) {
-                if (t == TIME_T_MIN)
+                if (t == time_t_min)
+
                     return WRONG;
                 --t;
                 --hi;

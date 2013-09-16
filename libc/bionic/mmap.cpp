@@ -26,26 +26,30 @@
  * SUCH DAMAGE.
  */
 
-#include <linux/err.h>
-#include <asm/unistd.h>
-#include <machine/asm.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
-/* unlike our auto-generated syscall stubs, this code saves lr
-   on the stack, as well as a few other registers. this makes
-   our stack unwinder happy, when we generate debug stack
-   traces after the C library or other parts of the system
-   abort due to a fatal runtime error (e.g. detection
-   of a corrupted malloc heap).
-*/
+#include "private/ErrnoRestorer.h"
 
-ENTRY(tgkill)
-    .save   {r4-r7, ip, lr}
-    stmfd   sp!, {r4-r7, ip, lr}
-    ldr     r7, =__NR_tgkill
-    swi     #0
-    ldmfd   sp!, {r4-r7, ip, lr}
-    cmn     r0, #(MAX_ERRNO + 1)
-    bxls    lr
-    neg     r0, r0
-    b       __set_errno
-END(tgkill)
+// mmap2(2) is like mmap(2), but the offset is in 4096-byte blocks, not bytes.
+extern "C" void*  __mmap2(void*, size_t, int, int, int, size_t);
+
+#define MMAP2_SHIFT 12 // 2**12 == 4096
+
+void* mmap(void* addr, size_t size, int prot, int flags, int fd, off_t offset) {
+  if (offset & ((1UL << MMAP2_SHIFT)-1)) {
+    errno = EINVAL;
+    return MAP_FAILED;
+  }
+
+  size_t unsigned_offset = static_cast<size_t>(offset); // To avoid sign extension.
+  void* result = __mmap2(addr, size, prot, flags, fd, unsigned_offset >> MMAP2_SHIFT);
+
+  if (result != MAP_FAILED && (flags & (MAP_PRIVATE | MAP_ANONYMOUS)) != 0) {
+    ErrnoRestorer errno_restorer;
+    madvise(result, size, MADV_MERGEABLE);
+  }
+
+  return result;
+}

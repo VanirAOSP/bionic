@@ -246,6 +246,7 @@ libc_bionic_src_files := \
     bionic/eventfd_read.cpp \
     bionic/eventfd_write.cpp \
     bionic/__fgets_chk.cpp \
+    bionic/futimens.cpp \
     bionic/getauxval.cpp \
     bionic/getcwd.cpp \
     bionic/libc_init_common.cpp \
@@ -691,6 +692,31 @@ include $(BUILD_STATIC_LIBRARY)
 
 
 # ========================================================
+# libc_tzcode.a - upstream 'tzcode' code
+# ========================================================
+
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := $(libc_tzcode_src_files)
+LOCAL_CFLAGS := \
+    $(libc_common_cflags) \
+    -std=gnu99 \
+    -DSTD_INSPIRED=1 \
+    -DTZDIR=\"/system/usr/share/zoneinfo\" \
+    -DTM_GMTOFF=tm_gmtoff \
+    -DUSG_COMPAT=1
+# tzcode currently relies on signed overflow in numerous places (http://b/10310929).
+LOCAL_CFLAGS += -fno-strict-overflow
+LOCAL_C_INCLUDES := $(libc_common_c_includes)
+LOCAL_MODULE := libc_tzcode
+LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
+LOCAL_SYSTEM_SHARED_LIBRARIES :=
+
+include $(BUILD_STATIC_LIBRARY)
+
+
+# ========================================================
+
 # libc_freebsd.a - upstream FreeBSD C library code
 # ========================================================
 #
