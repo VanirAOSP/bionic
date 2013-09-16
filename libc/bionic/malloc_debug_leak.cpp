@@ -62,6 +62,7 @@
 extern int gMallocLeakZygoteChild;
 extern pthread_mutex_t gAllocationsMutex;
 extern HashTable gHashTable;
+extern unsigned int gDebugMallocPatternDieSize;
 
 // =============================================================================
 // stack trace functions
@@ -257,6 +258,11 @@ extern "C" void* fill_memalign(size_t alignment, size_t bytes) {
 static void* MEMALIGN_GUARD = reinterpret_cast<void*>(0xA1A41520);
 
 extern "C" void* leak_malloc(size_t bytes) {
+    /* Inflating size by changing memory Allocation pattern in order to capture
+    * memory corruptions which are hard to reproduce.
+    */
+    bytes = bytes + gDebugMallocPatternDieSize;
+
     // allocate enough space infront of the allocation to store the pointer for
     // the alloc structure. This will making free'ing the structer really fast!
 

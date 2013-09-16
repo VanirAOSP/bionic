@@ -53,6 +53,7 @@
  * In a VM process, this is set to 1 after fork()ing out of zygote.
  */
 int gMallocLeakZygoteChild = 0;
+unsigned int gDebugMallocPatternDieSize = 0;
 
 pthread_mutex_t gAllocationsMutex = PTHREAD_MUTEX_INITIALIZER;
 HashTable gHashTable;
@@ -389,6 +390,19 @@ static void malloc_init_impl() {
             return;
         }
     }
+
+    /* Get pattern die size, to inflate user requested size in order change
+     * memory allocation pattern, would be help full in finding early crashes
+     * with valid stack trace, rather than dlmalloc's CORRUPTION_ERROR_ACTION
+     * which dump stack traces mostly on free list validation.
+     * Note: this property would be used with debug_level 10.
+     */
+    if (gDebugMallocPatternDieSize == 0 && __system_property_get("libc.debug.malloc.pattern_die", env)) {
+        gDebugMallocPatternDieSize = atoi(env);
+        debug_log("%s: Pattern Die figure %d\n",
+                  __progname, gDebugMallocPatternDieSize);
+    }
+
 
     // Choose the appropriate .so for the requested debug level.
     switch (gMallocDebugLevel) {

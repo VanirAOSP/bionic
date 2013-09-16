@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <bionic_atomic_inline.h>
 #include "local.h"
 
 int
@@ -57,6 +58,14 @@ fclose(FILE *fp)
 	if (HASLB(fp))
 		FREELB(fp);
 	fp->_r = fp->_w = 0;	/* Mess up if reaccessed. */
+
+	/*
+	 * We need memory write barrier here which is pairing
+	 * barrier with the one in __sfp() to make fp releasing
+	 * SMP safe. Check the comments in __sfp().
+	 */
+	ANDROID_MEMBAR_FULL();
+
 	fp->_flags = 0;		/* Release this FILE for reuse. */
 	FUNLOCKFILE(fp);
 	return (r);
