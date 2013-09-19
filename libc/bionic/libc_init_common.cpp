@@ -61,8 +61,14 @@ char** environ;
 uintptr_t __stack_chk_guard = 0;
 
 // Declared in <asm/page.h>.
-extern "C" unsigned int __page_size = PAGE_SIZE;
-extern "C" unsigned int __page_shift = PAGE_SHIFT;
+#ifdef __clang__
+extern "C" {
+#endif
+	unsigned int __page_size = PAGE_SIZE;
+	unsigned int __page_shift = PAGE_SHIFT;
+#ifdef __clang__
+}
+#endif
 
 static size_t get_main_thread_stack_size() {
   rlimit stack_limit;
