@@ -37,12 +37,11 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <bionic_atomic_inline.h>
 #include "local.h"
 #include "glue.h"
 #include "thread_private.h"
 
-static int	__sdidinit;
+int	__sdidinit;
 
 #define	NDYNAMIC 10		/* add ten more whenever necessary */
 
@@ -111,22 +110,14 @@ __sfp(void)
 	int n;
 	struct glue *g;
 
-	__check_sdidinit();
+	if (!__sdidinit)
+		__sinit();
 
 	_THREAD_PRIVATE_MUTEX_LOCK(__sfp_mutex);
 	for (g = &__sglue; g != NULL; g = g->next) {
-		for (fp = g->iobs, n = g->niobs; --n >= 0; fp++) {
-			short __flags = fp->_flags;
-			/*
-			 * We need memory read barrier here which is pairing
-			 * barrier with the one in fclose to make sure:
-			 * Once we see fp->_flags value is 0 on any cpu, we
-			 * know the fp releasing is fully done.
-			 */
-			ANDROID_MEMBAR_FULL();
-			if (__flags == 0)
+		for (fp = g->iobs, n = g->niobs; --n >= 0; fp++)
+			if (fp->_flags == 0)
 				goto found;
-		}
 	}
 
 	/* release lock while mallocing */
@@ -211,23 +202,7 @@ __sinit(void)
 	}
 	/* make sure we clean up on exit */
 	__atexit_register_cleanup(_cleanup); /* conservative */
-	ANDROID_MEMBAR_FULL();
 	__sdidinit = 1;
 out:
 	_THREAD_PRIVATE_MUTEX_UNLOCK(__sinit_mutex);
-}
-
-/*
- * __check_sdidinit() is used to make sure __sdidinit operation SMP safe.
- * __sdidinit initialization is typical singleton patter. Need memory
- * barrier to make it SMP safe.
- */
-void
-__check_sdidinit(void)
-{
-	/* Actually don't think volatile here is necessary. */
-	volatile int _inited = __sdidinit;
-	ANDROID_MEMBAR_FULL();
-	if (!_inited)
-		__sinit();
 }

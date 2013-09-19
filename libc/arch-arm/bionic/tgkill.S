@@ -39,7 +39,6 @@
 */
 
 ENTRY(tgkill)
-    .save   {r4-r7, ip, lr}
     stmfd   sp!, {r4-r7, ip, lr}
     ldr     r7, =__NR_tgkill
     swi     #0

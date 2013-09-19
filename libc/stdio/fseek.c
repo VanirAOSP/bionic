@@ -55,7 +55,8 @@ fseeko(FILE *fp, off_t offset, int whence)
 	int havepos;
 
 	/* make sure stdio is set up */
-	__check_sdidinit();
+	if (!__sdidinit)
+		__sinit();
 
 	/*
 	 * Have to be able to seek.

@@ -53,7 +53,9 @@ abort(void)
 	 * any errors -- X311J doesn't allow abort to return anyway.
 	 */
 	sigdelset(&mask, SIGABRT);
-
+    /* temporary, so deliberate seg fault can be caught by debuggerd */
+	sigdelset(&mask, SIGSEGV);
+    /* -- */
 	(void)sigprocmask(SIG_SETMASK, &mask, (sigset_t *)NULL);
 
 	/*
@@ -70,7 +72,17 @@ abort(void)
 		}
 	}
 
-	raise(SIGABRT);
+    /* temporary, for bug hunting */
+    /* seg fault seems to produce better debuggerd results than SIGABRT */
+#ifdef __mips__
+    /* An access that will generate SIGSEGV rather than SIGBUS. */
+    *((char*)0xdeadc0c0) = 39;
+#else
+    *((char*)0xdeadbaad) = 39;
+#endif
+    /* -- */
+
+	(void)kill(getpid(), SIGABRT);
 
 	/*
 	 * if SIGABRT ignored, or caught and the handler returns, do
@@ -87,6 +99,6 @@ abort(void)
         }
 
 	(void)sigprocmask(SIG_SETMASK, &mask, (sigset_t *)NULL);
-	raise(SIGABRT);
+	(void)kill(getpid(), SIGABRT);
 	_exit(1);
 }

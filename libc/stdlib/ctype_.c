@@ -36,15 +36,6 @@
 #include <ctype.h>
 #include "ctype_private.h"
 
-#define _U _CTYPE_U
-#define _L _CTYPE_L
-#define _N _CTYPE_N
-#define _S _CTYPE_S
-#define _P _CTYPE_P
-#define _C _CTYPE_C
-#define _X _CTYPE_X
-#define _B _CTYPE_B
-
 const char _C_ctype_[1 + CTYPE_NUM_CHARS] = {
 	0,
 	_C,	_C,	_C,	_C,	_C,	_C,	_C,	_C,
@@ -85,8 +76,6 @@ const char _C_ctype_[1 + CTYPE_NUM_CHARS] = {
 
 const char *_ctype_ = _C_ctype_;
 
-
-// TODO: fix the header file so we don't have to duplicate all this inlined stuff.
 
 #if 1 /* ndef NDEBUG */
 int isalnum(int c)
@@ -166,3 +155,4 @@ int toascii(int c)
 #endif /* __BSD_VISIBLE || __XPG_VISIBLE */
 
 #endif /* !NDBEUG */
+

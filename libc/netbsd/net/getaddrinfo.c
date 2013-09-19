@@ -1868,19 +1868,17 @@ error:
 	free(elems);
 }
 
-static int _using_default_dns(const char *iface)
+static int _using_alt_dns()
 {
-	char buf[IF_NAMESIZE+1];
-	size_t if_len;
+	char propname[PROP_NAME_MAX];
+	char propvalue[PROP_VALUE_MAX];
 
-	// common case
-	if (iface == NULL || *iface == '\0') return 1;
-
-	if_len = _resolv_get_default_iface(buf, sizeof(buf));
-	if (if_len + 1 <= sizeof(buf)) {
-		if (strcmp(buf, iface) != 0) return 0;
+	propvalue[0] = 0;
+	snprintf(propname, sizeof(propname), "net.dns1.%d", getpid());
+	if (__system_property_get(propname, propvalue) > 0 ) {
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 /*ARGSUSED*/
@@ -1930,7 +1928,7 @@ _dns_getaddrinfo(void *rv, void	*cb_data, va_list ap)
 			// Only implement AI_ADDRCONFIG if the application is not
 			// using its own DNS servers, since our implementation
 			// only works on the default connection.
-			if (_using_default_dns(iface)) {
+			if (!_using_alt_dns()) {
 				query_ipv6 = _have_ipv6();
 				query_ipv4 = _have_ipv4();
 			}
@@ -2315,12 +2313,6 @@ res_searchN(const char *name, struct res_target *target, res_state res)
 	if ((!dots && (res->options & RES_DEFNAMES)) ||
 	    (dots && !trailing_dot && (res->options & RES_DNSRCH))) {
 		int done = 0;
-
-		/* Unfortunately we need to set stuff up before
-		 * the domain stuff is tried.  Will have a better
-		 * fix after thread pools are used.
-		 */
-		_resolv_populate_res_for_iface(res);
 
 		for (domain = (const char * const *)res->dnsrch;
 		   *domain && !done;

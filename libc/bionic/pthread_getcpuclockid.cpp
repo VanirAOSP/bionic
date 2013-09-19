@@ -36,13 +36,7 @@ int pthread_getcpuclockid(pthread_t t, clockid_t* clockid) {
     return ESRCH;
   }
 
-  // The tid is stored in the top bits, but negated.
-  clockid_t result = ~static_cast<clockid_t>(thread->tid) << 3;
-  // Bits 0 and 1: clock type (0 = CPUCLOCK_PROF, 1 = CPUCLOCK_VIRT, 2 = CPUCLOCK_SCHED).
-  result |= 2;
-  // Bit 2: thread (set) or process (clear)?
-  result |= (1 << 2);
-
-  *clockid = result;
+  enum { CLOCK_IDTYPE_BITS = 3 };
+  *clockid = CLOCK_THREAD_CPUTIME_ID | (thread->tid << CLOCK_IDTYPE_BITS);
   return 0;
 }
