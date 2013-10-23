@@ -223,16 +223,19 @@ ifeq ($(ARCH_ARM_HAVE_NEON),true)
   libm_common_cflags += -D__NEON
 endif
 ifeq ($(TARGET_CPU_VARIANT),krait)
+  libm_arm_src_files += \
+        arm/e_pow.S
   libm_use_assembly_math_funcs := true
   libm_arm_cflags += -DKRAIT_NEON_OPTIMIZATION
 endif
 ifeq ($(TARGET_USE_QCOM_BIONIC_OPTIMIZATION),true)
+  libm_arm_src_files += \
+        arm/e_pow.S
   libm_use_assembly_math_funcs := true
 endif
 
 ifeq ($(libm_use_assembly_math_funcs),true)
     libm_arm_src_files += \
-        arm/e_pow.S     \
         arm/s_cos.S     \
         arm/s_sin.S     \
         arm/e_sqrtf.S   \
