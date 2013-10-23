@@ -29,9 +29,16 @@
 
 #include <machine/asm.h>
 
-ENTRY(sqrtf)
-	vmov.f32	s0, r0
-	vsqrt.f32	s0, s0
-	vmov.f32	r0, s0
+#ifndef _fmal
+ENTRY(fma)
+#else
+ENTRY(fmal)
+#endif
+	vmla.f64	d2, d0, d1
+	vmov.f64	d0, d2
 	bx        lr
-END(sqrtf)
+#ifndef _fmal
+END(fma)
+#else
+END(fmal)
+#endif

@@ -115,8 +115,6 @@ libm_common_src_files += \
     upstream-freebsd/lib/msun/src/s_finitef.c \
     upstream-freebsd/lib/msun/src/s_floor.c \
     upstream-freebsd/lib/msun/src/s_floorf.c \
-    upstream-freebsd/lib/msun/src/s_fma.c \
-    upstream-freebsd/lib/msun/src/s_fmaf.c \
     upstream-freebsd/lib/msun/src/s_fmax.c \
     upstream-freebsd/lib/msun/src/s_fmaxf.c \
     upstream-freebsd/lib/msun/src/s_fmin.c \
@@ -136,8 +134,6 @@ libm_common_src_files += \
     upstream-freebsd/lib/msun/src/s_log1pf.c \
     upstream-freebsd/lib/msun/src/s_logb.c \
     upstream-freebsd/lib/msun/src/s_logbf.c \
-    upstream-freebsd/lib/msun/src/s_lrint.c \
-    upstream-freebsd/lib/msun/src/s_lrintf.c \
     upstream-freebsd/lib/msun/src/s_lround.c \
     upstream-freebsd/lib/msun/src/s_lroundf.c \
     upstream-freebsd/lib/msun/src/s_modf.c \
@@ -214,34 +210,48 @@ libm_common_src_files += fake_long_double.c
 # TODO: re-enable i387/e_sqrtf.S for x86, and maybe others.
 
 libm_common_cflags := -DFLT_EVAL_METHOD=0
-libm_common_includes := $(LOCAL_PATH)/upstream-freebsd/lib/msun/src/
+libm_common_includes := \
+    $(LOCAL_PATH)/upstream-freebsd/lib/msun/src \
+    $(LOCAL_PATH)/../libc/arch-$(TARGET_ARCH)/include
 
 libm_arm_includes := $(LOCAL_PATH)/arm
 libm_arm_src_files := arm/fenv.c
+libm_use_assembly_math_funcs := false
+
+ifeq ($(ARCH_ARM_HAVE_NEON),true)
+  libm_use_assembly_math_funcs := true
+  libm_common_cflags += -D__NEON
+endif
 ifeq ($(TARGET_CPU_VARIANT),krait)
-  libm_arm_src_files += \
-	arm/e_pow.S	\
-	arm/s_cos.S	\
-	arm/s_sin.S	\
-	arm/e_sqrtf.S	\
-	arm/e_sqrt.S
-  libm_arm_cflags += -DKRAIT_NEON_OPTIMIZATION -fno-if-conversion
-else
-  ifeq ($(TARGET_USE_QCOM_BIONIC_OPTIMIZATION),true)
+  libm_use_assembly_math_funcs := true
+  libm_arm_cflags += -DKRAIT_NEON_OPTIMIZATION
+endif
+ifeq ($(TARGET_USE_QCOM_BIONIC_OPTIMIZATION),true)
+  libm_use_assembly_math_funcs := true
+endif
+
+ifeq ($(libm_use_assembly_math_funcs),true)
     libm_arm_src_files += \
-      arm/e_pow.S \
-      arm/s_cos.S \
-      arm/s_sin.S \
-      arm/e_sqrtf.S \
-      arm/e_sqrt.S
-    libm_arm_cflags += -DKRAIT_NEON_OPTIMIZATION -fno-if-conversion
-  else
+        arm/e_pow.S     \
+        arm/s_cos.S     \
+        arm/s_sin.S     \
+        arm/e_sqrtf.S   \
+        arm/e_sqrt.S    \
+        arm/s_fma.S     \
+        arm/s_fmaf.S    \
+        arm/s_lrint.S   \
+        arm/s_lrintf.S
+    libm_arm_cflags += -fno-if-conversion
+else
     libm_common_src_files += \
-      upstream-freebsd/lib/msun/src/s_cos.c \
-      upstream-freebsd/lib/msun/src/s_sin.c \
-      upstream-freebsd/lib/msun/src/e_sqrtf.c \
-      upstream-freebsd/lib/msun/src/e_sqrt.c
-    endif
+        upstream-freebsd/lib/msun/src/s_cos.c   \
+        upstream-freebsd/lib/msun/src/s_sin.c   \
+        upstream-freebsd/lib/msun/src/e_sqrtf.c \
+        upstream-freebsd/lib/msun/src/e_sqrt.c  \
+        upstream-freebsd/lib/msun/src/s_fma.c   \
+        upstream-freebsd/lib/msun/src/s_fmaf.c  \
+        upstream-freebsd/lib/msun/src/s_lrint.c \
+        upstream-freebsd/lib/msun/src/s_lrintf.c
 endif
 
 libm_x86_includes := $(LOCAL_PATH)/i386 $(LOCAL_PATH)/i387
