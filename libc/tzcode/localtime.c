@@ -1813,11 +1813,13 @@ time2sub(struct tm * const tmp,
         if (dir != 0) {
             if (t == lo) {
                 if (t == time_t_max)
+
                     return WRONG;
                 ++t;
                 ++lo;
             } else if (t == hi) {
                 if (t == time_t_min)
+
                     return WRONG;
                 --t;
                 --hi;

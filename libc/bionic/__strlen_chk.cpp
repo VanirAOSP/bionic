@@ -56,9 +56,9 @@
 extern "C" size_t __strlen_chk(const char *s, size_t s_len) {
     size_t ret = strlen(s);
 
-    if (__predict_false(ret >= s_len)) {
+    /*if (__builtin_expect(ret >= s_len, 0)) {
         __fortify_chk_fail("strlen read overflow", 0);
-    }
+    }*/
 
     return ret;
 }

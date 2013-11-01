@@ -94,8 +94,7 @@ extern int __set_tls(void* ptr);
        (volatile void*) __val; })
 #elif defined(__mips__)
 # define __get_tls() \
-    /* On mips32r1, this goes via a kernel illegal instruction trap that's optimized for v1. */ \
-    ({ register unsigned int __val asm("v1"); \
+    ({ register unsigned int __val; \
        asm ("   .set    push\n" \
             "   .set    mips32r2\n" \
             "   rdhwr   %0,$29\n" \
@@ -110,10 +109,13 @@ extern int __set_tls(void* ptr);
 #error unsupported architecture
 #endif
 
+/* return the stack base and size, used by our malloc debugger */
+extern void* __get_stack_base(int* p_stack_size);
+
 __END_DECLS
 
 #if defined(__cplusplus)
-struct KernelArgumentBlock;
+class KernelArgumentBlock;
 extern __LIBC_HIDDEN__ void __libc_init_tls(KernelArgumentBlock& args);
 #endif
 

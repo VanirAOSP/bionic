@@ -30,7 +30,6 @@
 
 #include <pthread.h>
 #include <stdbool.h>
-#include <sys/cdefs.h>
 
 __BEGIN_DECLS
 
@@ -42,12 +41,11 @@ typedef struct pthread_internal_t
     pid_t                       tid;
     bool                        allocated_on_heap;
     pthread_cond_t              join_cond;
+    int                         join_count;
     void*                       return_value;
     int                         internal_flags;
     __pthread_cleanup_t*        cleanup_stack;
     void**                      tls;         /* thread-local storage area */
-
-    void* alternate_signal_stack;
 
     /*
      * The dynamic linker implements dlerror(3), which makes it hard for us to implement this
@@ -65,10 +63,7 @@ pthread_internal_t* __get_thread(void);
 __LIBC_HIDDEN__ void pthread_key_clean_all(void);
 __LIBC_HIDDEN__ void _pthread_internal_remove_locked(pthread_internal_t* thread);
 
-/* Has the thread been detached by a pthread_join or pthread_detach call? */
 #define PTHREAD_ATTR_FLAG_DETACHED      0x00000001
-
-/* Was the thread's stack allocated by the user rather than by us? */
 #define PTHREAD_ATTR_FLAG_USER_STACK    0x00000002
 
 /* Has the thread been joined by another thread? */
@@ -76,6 +71,15 @@ __LIBC_HIDDEN__ void _pthread_internal_remove_locked(pthread_internal_t* thread)
 
 /* Has the thread already exited but not been joined? */
 #define PTHREAD_ATTR_FLAG_ZOMBIE        0x00000008
+
+/*
+ * Traditionally we give threads a 1MiB stack. When we started
+ * allocating per-thread alternate signal stacks to ease debugging of
+ * stack overflows, we subtracted the same amount we were using there
+ * from the default thread stack size. This should keep memory usage
+ * roughly constant.
+ */
+#define PTHREAD_STACK_SIZE_DEFAULT ((1 * 1024 * 1024) - SIGSTKSZ)
 
 __LIBC_HIDDEN__ extern pthread_internal_t* gThreadList;
 __LIBC_HIDDEN__ extern pthread_mutex_t gThreadListLock;

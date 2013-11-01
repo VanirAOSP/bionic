@@ -417,7 +417,10 @@ res_nsend(res_state statp,
 	 */
 	if (EXT(statp).nscount != 0) {
 		int needclose = 0;
-		struct sockaddr_storage peer;
+		union {
+			struct sockaddr_storage storage;
+			struct sockaddr generic;
+		} peer;
 		socklen_t peerlen;
 
 		if (EXT(statp).nscount != statp->nscount)
@@ -433,13 +436,13 @@ res_nsend(res_state statp,
 
 				if (EXT(statp).nssocks[ns] == -1)
 					continue;
-				peerlen = sizeof(peer);
+				peerlen = sizeof(peer.storage);
 				if (getpeername(EXT(statp).nssocks[ns],
-				    (struct sockaddr *)(void *)&peer, &peerlen) < 0) {
+				    &peer.generic, &peerlen) < 0) {
 					needclose++;
 					break;
 				}
-				if (!sock_eq((struct sockaddr *)(void *)&peer,
+				if (!sock_eq(&peer.generic,
 				    get_nsaddr(statp, (size_t)ns))) {
 					needclose++;
 					break;
@@ -581,8 +584,8 @@ res_nsend(res_state statp,
 			if (n == 0)
 				goto next_ns;
 			if (DBG) {
-				__libc_format_log(ANDROID_LOG_DEBUG, "libc", "time=%ld\n",
-                                                  time(NULL));
+				__libc_format_log(ANDROID_LOG_DEBUG, "libc",
+					"time=%d, %d\n",time(NULL), time(NULL)%2);
 			}
 			if (v_circuit)
 				goto same_ns;
@@ -760,15 +763,15 @@ send_vc(res_state statp,
 
 	/* Are we still talking to whom we want to talk to? */
 	if (statp->_vcsock >= 0 && (statp->_flags & RES_F_VC) != 0) {
-		struct sockaddr_storage peer;
-		socklen_t size = sizeof peer;
-		int old_mark;
-		int mark_size = sizeof(old_mark);
+		union {
+			struct sockaddr_storage storage;
+			struct sockaddr generic;
+		} peer;
+		socklen_t size = sizeof peer.storage;
+
 		if (getpeername(statp->_vcsock,
-				(struct sockaddr *)(void *)&peer, &size) < 0 ||
-		    !sock_eq((struct sockaddr *)(void *)&peer, nsap) ||
-			getsockopt(statp->_vcsock, SOL_SOCKET, SO_MARK, &old_mark, &mark_size) < 0 ||
-			old_mark != statp->_mark) {
+				&peer.generic, &size) < 0 ||
+		    !sock_eq(&peer.generic, nsap)) {
 			res_nclose(statp);
 			statp->_flags &= ~RES_F_VC;
 		}
@@ -796,14 +799,6 @@ send_vc(res_state statp,
 				*terrno = errno;
 				Perror(statp, stderr, "socket(vc)", errno);
 				return (-1);
-			}
-		}
-		if (statp->_mark != 0) {
-			if (setsockopt(statp->_vcsock, SOL_SOCKET,
-				        SO_MARK, &statp->_mark, sizeof(statp->_mark)) < 0) {
-				*terrno = errno;
-				Perror(statp, stderr, "setsockopt", errno);
-				return -1;
 			}
 		}
 		errno = 0;
@@ -972,7 +967,7 @@ done:
 	fcntl(sock, F_SETFL, origflags);
 	if (DBG) {
 		__libc_format_log(ANDROID_LOG_DEBUG, "libc",
-			"  %d connect_with_timeout returning %d\n", sock, res);
+			"  %d connect_with_timeout returning %s\n", sock, res);
 	}
 	return res;
 }
@@ -1036,7 +1031,7 @@ retry:
 	}
 	if (DBG) {
 		__libc_format_log(ANDROID_LOG_DEBUG, "libc",
-			"  %d retrying_select returning %d\n",sock, n);
+			"  %d retrying_select returning %d for %d\n",sock, n);
 	}
 
 	return n;
@@ -1054,7 +1049,10 @@ send_dg(res_state statp,
 	int nsaplen;
 	struct timespec now, timeout, finish;
 	fd_set dsmask;
-	struct sockaddr_storage from;
+	union {
+		struct sockaddr_storage storage;
+		struct sockaddr generic;
+	} from;
 	socklen_t fromlen;
 	int resplen, seconds, n, s;
 
@@ -1079,14 +1077,6 @@ send_dg(res_state statp,
 				*terrno = errno;
 				Perror(statp, stderr, "socket(dg)", errno);
 				return (-1);
-			}
-		}
-
-		if (statp->_mark != 0) {
-			if (setsockopt(EXT(statp).nssocks[ns], SOL_SOCKET,
-					SO_MARK, &(statp->_mark), sizeof(statp->_mark)) < 0) {
-				res_nclose(statp);
-				return -1;
 			}
 		}
 #ifndef CANNOT_CONNECT_DGRAM
@@ -1116,7 +1106,6 @@ send_dg(res_state statp,
 #endif /* !CANNOT_CONNECT_DGRAM */
 		Dprint(statp->options & RES_DEBUG,
 		       (stdout, ";; new DG socket\n"))
-
 	}
 	s = EXT(statp).nssocks[ns];
 #ifndef CANNOT_CONNECT_DGRAM
@@ -1155,9 +1144,9 @@ retry:
 		return (0);
 	}
 	errno = 0;
-	fromlen = sizeof(from);
+	fromlen = sizeof(from.storage);
 	resplen = recvfrom(s, (char*)ans, (size_t)anssiz,0,
-			   (struct sockaddr *)(void *)&from, &fromlen);
+			   &from.generic, &fromlen);
 	if (resplen <= 0) {
 		Perror(statp, stderr, "recvfrom", errno);
 		res_nclose(statp);
@@ -1191,7 +1180,7 @@ retry:
 		goto retry;
 	}
 	if (!(statp->options & RES_INSECURE1) &&
-	    !res_ourserver_p(statp, (struct sockaddr *)(void *)&from)) {
+	    !res_ourserver_p(statp, &from.generic)) {
 		/*
 		 * response from wrong server? ignore it.
 		 * XXX - potential security hazard could

@@ -80,8 +80,7 @@ ungetc(int c, FILE *fp)
 {
 	if (c == EOF)
 		return (EOF);
-	if (!__sdidinit)
-		__sinit();
+	__check_sdidinit();
 	FLOCKFILE(fp);
 	_SET_ORIENTATION(fp, -1);
 	if ((fp->_flags & __SRD) == 0) {

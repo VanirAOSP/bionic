@@ -118,7 +118,7 @@
 ElfReader::ElfReader(const char* name, int fd)
     : name_(name), fd_(fd),
       phdr_num_(0), phdr_mmap_(NULL), phdr_table_(NULL), phdr_size_(0),
-      load_start_(NULL), load_size_(0), load_bias_(0),
+      load_start_(NULL), load_size_(0), load_bias_(0), required_base_(0),
       loaded_phdr_(NULL) {
 }
 
@@ -261,43 +261,78 @@ size_t phdr_table_get_load_size(const Elf32_Phdr* phdr_table,
             max_vaddr = phdr->p_vaddr + phdr->p_memsz;
         }
     }
-    if (!found_pt_load) {
-        min_vaddr = 0x00000000U;
+
+    if (min_vaddr > max_vaddr) {
+        return 0;
     }
 
     min_vaddr = PAGE_START(min_vaddr);
     max_vaddr = PAGE_END(max_vaddr);
 
-    if (out_min_vaddr != NULL) {
-        *out_min_vaddr = min_vaddr;
-    }
-    if (out_max_vaddr != NULL) {
-        *out_max_vaddr = max_vaddr;
-    }
     return max_vaddr - min_vaddr;
+}
+
+typedef struct {
+    long mmap_addr;
+    char tag[4]; /* 'P', 'R', 'E', ' ' */
+} prelink_info_t;
+
+/* Returns the requested base address if the library is prelinked,
+ * and 0 otherwise.  */
+static Elf32_Addr is_prelinked(int fd, const char *name)
+{
+    off_t sz = lseek(fd, -sizeof(prelink_info_t), SEEK_END);
+    if (sz < 0) {
+        DL_ERR("lseek() failed!");
+        return 0;
+    }
+
+    prelink_info_t info;
+    int rc = TEMP_FAILURE_RETRY(read(fd, &info, sizeof(info)));
+    if (rc != sizeof(info)) {
+        DL_ERR("Could not read prelink_info_t structure for `%s`\n", name);
+        return 0;
+    }
+
+    if (memcmp(info.tag, "PRE ", 4)) {
+        DL_ERR("`%s` is not a prelinked library\n", name);
+        return 0;
+    }
+
+    return (unsigned long)info.mmap_addr;
 }
 
 // Reserve a virtual address range big enough to hold all loadable
 // segments of a program header table. This is done by creating a
 // private anonymous mmap() with PROT_NONE.
 bool ElfReader::ReserveAddressSpace() {
-  Elf32_Addr min_vaddr;
-  load_size_ = phdr_table_get_load_size(phdr_table_, phdr_num_, &min_vaddr);
+  load_size_ = phdr_table_get_load_size(phdr_table_, phdr_num_);
   if (load_size_ == 0) {
     DL_ERR("\"%s\" has no loadable segments", name_);
     return false;
   }
 
-  uint8_t* addr = reinterpret_cast<uint8_t*>(min_vaddr);
+  required_base_ = is_prelinked(fd_, name_);
+
   int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
-  void* start = mmap(addr, load_size_, PROT_NONE, mmap_flags, -1, 0);
+  if (required_base_ != 0)
+    mmap_flags |= MAP_FIXED;
+  void* start = mmap((void*)required_base_, load_size_, PROT_NONE, mmap_flags, -1, 0);
   if (start == MAP_FAILED) {
     DL_ERR("couldn't reserve %d bytes of address space for \"%s\"", load_size_, name_);
     return false;
   }
 
   load_start_ = start;
-  load_bias_ = reinterpret_cast<uint8_t*>(start) - addr;
+  load_bias_ = 0;
+
+  for (size_t i = 0; i < phdr_num_; ++i) {
+    const Elf32_Phdr* phdr = &phdr_table_[i];
+    if (phdr->p_type == PT_LOAD) {
+      load_bias_ = reinterpret_cast<Elf32_Addr>(start) - PAGE_START(phdr->p_vaddr);
+      break;
+    }
+  }
   return true;
 }
 
@@ -327,19 +362,16 @@ bool ElfReader::LoadSegments() {
     Elf32_Addr file_end   = file_start + phdr->p_filesz;
 
     Elf32_Addr file_page_start = PAGE_START(file_start);
-    Elf32_Addr file_length = file_end - file_page_start;
 
-    if (file_length != 0) {
-      void* seg_addr = mmap((void*)seg_page_start,
-                            file_length,
-                            PFLAGS_TO_PROT(phdr->p_flags),
-                            MAP_FIXED|MAP_PRIVATE,
-                            fd_,
-                            file_page_start);
-      if (seg_addr == MAP_FAILED) {
-        DL_ERR("couldn't map \"%s\" segment %d: %s", name_, i, strerror(errno));
-        return false;
-      }
+    void* seg_addr = mmap((void*)seg_page_start,
+                          file_end - file_page_start,
+                          PFLAGS_TO_PROT(phdr->p_flags),
+                          MAP_FIXED|MAP_PRIVATE,
+                          fd_,
+                          file_page_start);
+    if (seg_addr == MAP_FAILED) {
+      DL_ERR("couldn't map \"%s\" segment %d: %s", name_, i, strerror(errno));
+      return false;
     }
 
     // if the segment is writable, and does not end on a page boundary,

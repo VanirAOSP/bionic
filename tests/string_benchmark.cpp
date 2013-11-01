@@ -24,9 +24,7 @@
 #define AT_COMMON_SIZES \
     Arg(8)->Arg(64)->Arg(512)->Arg(1*KB)->Arg(8*KB)->Arg(16*KB)->Arg(32*KB)->Arg(64*KB)
 
-// TODO: test unaligned operation too? (currently everything will be 8-byte aligned by malloc.)
-
-static void BM_string_memcmp(int iters, int nbytes) {
+static void BM_string_memcmp_8byte_aligned(int iters, int nbytes) {
   StopBenchmarkTiming();
   char* src = new char[nbytes]; char* dst = new char[nbytes];
   memset(src, 'x', nbytes);
@@ -43,9 +41,28 @@ static void BM_string_memcmp(int iters, int nbytes) {
   delete[] src;
   delete[] dst;
 }
-BENCHMARK(BM_string_memcmp)->AT_COMMON_SIZES;
+BENCHMARK(BM_string_memcmp_8byte_aligned)->AT_COMMON_SIZES;
 
-static void BM_string_memcpy(int iters, int nbytes) {
+static void BM_string_memcmp_unaligned(int iters, int nbytes) {
+  StopBenchmarkTiming();
+  char* src = new char[nbytes+10]; char* dst = new char[nbytes+13];
+  memset(src, 'x', nbytes);
+  memset(dst, 'x', nbytes);
+  StartBenchmarkTiming();
+
+  volatile int c __attribute__((unused)) = 0;
+  for (int i = 0; i < iters; ++i) {
+    c += memcmp(dst+10, src+13, nbytes);
+  }
+
+  StopBenchmarkTiming();
+  SetBenchmarkBytesProcessed(int64_t(iters) * int64_t(nbytes));
+  delete[] src;
+  delete[] dst;
+}
+BENCHMARK(BM_string_memcmp_unaligned)->AT_COMMON_SIZES;
+
+static void BM_string_memcpy_8byte_aligned(int iters, int nbytes) {
   StopBenchmarkTiming();
   char* src = new char[nbytes]; char* dst = new char[nbytes];
   memset(src, 'x', nbytes);
@@ -60,7 +77,24 @@ static void BM_string_memcpy(int iters, int nbytes) {
   delete[] src;
   delete[] dst;
 }
-BENCHMARK(BM_string_memcpy)->AT_COMMON_SIZES;
+BENCHMARK(BM_string_memcpy_8byte_aligned)->AT_COMMON_SIZES;
+
+static void BM_string_memcpy_unaligned(int iters, int nbytes) {
+  StopBenchmarkTiming();
+  char* src = new char[nbytes]; char* dst = new char[nbytes];
+  memset(src, 'x', nbytes);
+  StartBenchmarkTiming();
+
+  for (int i = 0; i < iters; ++i) {
+    memcpy(dst+10, src+13, nbytes);
+  }
+
+  StopBenchmarkTiming();
+  SetBenchmarkBytesProcessed(int64_t(iters) * int64_t(nbytes));
+  delete[] src;
+  delete[] dst;
+}
+BENCHMARK(BM_string_memcpy_unaligned)->AT_COMMON_SIZES;
 
 static void BM_string_memmove(int iters, int nbytes) {
   StopBenchmarkTiming();

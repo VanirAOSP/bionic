@@ -53,8 +53,7 @@ __srefill(FILE *fp)
 {
 
 	/* make sure stdio is set up */
-	if (!__sdidinit)
-		__sinit();
+	__check_sdidinit();
 
 	fp->_r = 0;		/* largely a convenience for callers */
 

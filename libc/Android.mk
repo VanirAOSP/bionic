@@ -181,24 +181,12 @@ libc_common_src_files := \
 	netbsd/nameser/ns_print.c \
 	netbsd/nameser/ns_samedomain.c \
 
-# Fortify implementations of libc functions.
-libc_common_src_files += \
-    bionic/__fgets_chk.cpp \
-    bionic/__memcpy_chk.cpp \
-    bionic/__memmove_chk.cpp \
-    bionic/__memset_chk.cpp \
-    bionic/__strcat_chk.cpp \
-    bionic/__strchr_chk.cpp \
-    bionic/__strcpy_chk.cpp \
-    bionic/__strlcat_chk.cpp \
-    bionic/__strlcpy_chk.cpp \
-    bionic/__strlen_chk.cpp \
-    bionic/__strncat_chk.cpp \
-    bionic/__strncpy_chk.cpp \
-    bionic/__strrchr_chk.cpp \
-    bionic/__umask_chk.cpp \
-    bionic/__vsnprintf_chk.cpp \
-    bionic/__vsprintf_chk.cpp \
+# cortex-a9 without neon
+ifneq ($(TARGET_CPU_VARIANT),tegra2)
+    libc_common_src_files += \
+        bionic/memchr.c \
+
+endif
 
 libc_bionic_src_files := \
     bionic/abort.cpp \
@@ -364,14 +352,11 @@ libc_upstream_netbsd_src_files := \
 # =========================================================
 ifeq ($(TARGET_ARCH),arm)
 libc_common_src_files += \
-	bionic/memmove.c.arm \
-	string/bcopy.c \
 	string/strncmp.c \
 	string/strncat.c \
 	string/strncpy.c \
 	bionic/strchr.cpp \
 	string/strrchr.c \
-	bionic/memchr.c \
 	bionic/memrchr.c \
 	string/index.c \
 	bionic/strnlen.c \
@@ -427,7 +412,6 @@ libc_common_src_files += \
 	string/strncpy.c \
 	bionic/strchr.cpp \
 	string/strrchr.c \
-	bionic/memchr.c \
 	bionic/memrchr.c \
 	string/index.c \
 	bionic/strnlen.c \
@@ -499,7 +483,8 @@ libc_common_cflags := \
     -I$(LOCAL_PATH)/private \
     -DPOSIX_MISTAKE \
     -DLOG_ON_HEAP_ERROR \
-    -Wall -Wextra
+    -Wall -Wextra \
+    -Wno-error=strict-aliasing
 
 ifeq ($(strip $(DEBUG_BIONIC_LIBC)),true)
   libc_common_cflags += -DDEBUG
@@ -718,6 +703,8 @@ LOCAL_CFLAGS := \
     -DTZDIR=\"/system/usr/share/zoneinfo\" \
     -DTM_GMTOFF=tm_gmtoff \
     -DUSG_COMPAT=1
+# tzcode currently relies on signed overflow in numerous places (http://b/10310929).
+LOCAL_CFLAGS += -fno-strict-overflow
 LOCAL_C_INCLUDES := $(libc_common_c_includes)
 LOCAL_MODULE := libc_tzcode
 LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk
@@ -727,6 +714,7 @@ include $(BUILD_STATIC_LIBRARY)
 
 
 # ========================================================
+
 # libc_freebsd.a - upstream FreeBSD C library code
 # ========================================================
 #

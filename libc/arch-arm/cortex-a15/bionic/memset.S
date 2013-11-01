@@ -28,61 +28,30 @@
 
 #include <machine/cpu-features.h>
 #include <machine/asm.h>
-#include "libc_events.h"
 
-        /*
-         * Optimized memset() for ARM.
+		/*
+		 * Optimized memset() for ARM.
          *
          * memset() returns its first argument.
-         */
+		 */
 
         .fpu        neon
         .syntax     unified
 
-ENTRY(__memset_chk)
-        .cfi_startproc
-        cmp         r2, r3
-        bls         .L_done
-
-        // Preserve lr for backtrace.
-        .save       {lr}
-        push        {lr}
-        .cfi_def_cfa_offset 4
-        .cfi_rel_offset lr, 0
-
-        ldr         r0, error_message
-        ldr         r1, error_code
-1:
-        add         r0, pc
-        bl          __fortify_chk_fail
-error_code:
-        .word       BIONIC_EVENT_MEMSET_BUFFER_OVERFLOW
-error_message:
-        .word       error_string-(1b+8)
-
-        .cfi_endproc
-END(__memset_chk)
-
 ENTRY(bzero)
-        .cfi_startproc
         mov         r2, r1
         mov         r1, #0
-.L_done:
         // Fall through to memset...
-        .cfi_endproc
 END(bzero)
 
 ENTRY(memset)
-        .cfi_startproc
         .save       {r0}
         stmfd       sp!, {r0}
-        .cfi_def_cfa_offset 4
-        .cfi_rel_offset r0, 0
 
         // The new algorithm is slower for copies < 16 so use the old
         // neon code in that case.
         cmp         r2, #16
-        blo         .L_set_less_than_16_unknown_align
+        blo         set_less_than_16_unknown_align
 
         // Use strd which requires an even and odd register so move the
         // values so that:
@@ -96,17 +65,17 @@ ENTRY(memset)
         orr         r1, r1, r1, lsr #8
         orr         r1, r1, r1, lsr #16
 
-.L_check_alignment:
+check_alignment:
         // Align destination to a double word to avoid the strd crossing
         // a cache line boundary.
         ands        ip, r3, #7
-        bne         .L_do_double_word_align
+        bne         do_double_word_align
 
-.L_double_word_aligned:
+double_word_aligned:
         mov         r0, r1
 
         subs        r2, #64
-        blo         .L_set_less_than_64
+        blo         set_less_than_64
 
 1:      // Main loop sets 64 bytes at a time.
         .irp        offset, #0, #8, #16, #24, #32, #40, #48, #56
@@ -117,39 +86,39 @@ ENTRY(memset)
         subs        r2, #64
         bge         1b
 
-.L_set_less_than_64:
+set_less_than_64:
         // Restore r2 to the count of bytes left to set.
         add         r2, #64
         lsls        ip, r2, #27
-        bcc         .L_set_less_than_32
+        bcc         set_less_than_32
         // Set 32 bytes.
         .irp        offset, #0, #8, #16, #24
         strd        r0, r1, [r3, \offset]
         .endr
         add         r3, #32
 
-.L_set_less_than_32:
-        bpl         .L_set_less_than_16
+set_less_than_32:
+        bpl         set_less_than_16
         // Set 16 bytes.
         .irp        offset, #0, #8
         strd        r0, r1, [r3, \offset]
         .endr
         add         r3, #16
 
-.L_set_less_than_16:
+set_less_than_16:
         // Less than 16 bytes to set.
         lsls        ip, r2, #29
-        bcc         .L_set_less_than_8
+        bcc         set_less_than_8
 
         // Set 8 bytes.
         strd        r0, r1, [r3], #8
 
-.L_set_less_than_8:
-        bpl         .L_set_less_than_4
+set_less_than_8:
+        bpl         set_less_than_4
         // Set 4 bytes
         str         r1, [r3], #4
 
-.L_set_less_than_4:
+set_less_than_4:
         lsls        ip, r2, #31
         it          ne
         strbne      r1, [r3], #1
@@ -160,7 +129,7 @@ ENTRY(memset)
         ldmfd       sp!, {r0}
         bx          lr
 
-.L_do_double_word_align:
+do_double_word_align:
         rsb         ip, ip, #8
         sub         r2, r2, ip
         movs        r0, ip, lsl #31
@@ -172,11 +141,11 @@ ENTRY(memset)
 
         // Dst is at least word aligned by this point.
         cmp         ip, #4
-        blo         .L_double_word_aligned
+        blo         double_word_aligned
         str         r1, [r3], #4
-        b           .L_double_word_aligned
+        b           double_word_aligned
 
-.L_set_less_than_16_unknown_align:
+set_less_than_16_unknown_align:
         // Set up to 15 bytes.
         vdup.8      d0, r1
         movs        ip, r2, lsl #29
@@ -192,9 +161,4 @@ ENTRY(memset)
         strbcs      r1, [r0], #1
         ldmfd       sp!, {r0}
         bx          lr
-        .cfi_endproc
 END(memset)
-
-        .data
-error_string:
-        .string     "memset buffer overflow"
