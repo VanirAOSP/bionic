@@ -57,9 +57,8 @@
 
         // This version is tuned for the Cortex-A15 processor.
 
-#include <machine/cpu-features.h>
 #include <machine/asm.h>
-
+#include "libc_events.h"
         .text
         .syntax unified
         .fpu    neon
