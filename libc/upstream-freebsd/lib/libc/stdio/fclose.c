@@ -30,10 +30,19 @@
  * SUCH DAMAGE.
  */
 
+#if defined(LIBC_SCCS) && !defined(lint)
+static char sccsid[] = "@(#)fclose.c	8.1 (Berkeley) 6/4/93";
+#endif /* LIBC_SCCS and not lint */
+#include <sys/cdefs.h>
+__FBSDID("$FreeBSD$");
+
+#include "namespace.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <bionic_atomic_inline.h>
+#include "un-namespace.h"
+#include <spinlock.h>
+#include "libc_private.h"
 #include "local.h"
 
 int
@@ -46,7 +55,6 @@ fclose(FILE *fp)
 		return (EOF);
 	}
 	FLOCKFILE(fp);
-	WCIO_FREE(fp);
 	r = fp->_flags & __SWR ? __sflush(fp) : 0;
 	if (fp->_close != NULL && (*fp->_close)(fp->_cookie) < 0)
 		r = EOF;
@@ -56,16 +64,22 @@ fclose(FILE *fp)
 		FREEUB(fp);
 	if (HASLB(fp))
 		FREELB(fp);
+	fp->_file = -1;
 	fp->_r = fp->_w = 0;	/* Mess up if reaccessed. */
 
 	/*
-	 * We need memory write barrier here which is pairing
-	 * barrier with the one in __sfp() to make fp releasing
-	 * SMP safe. Check the comments in __sfp().
+	 * Lock the spinlock used to protect __sglue list walk in
+	 * __sfp().  The __sfp() uses fp->_flags == 0 test as an
+	 * indication of the unused FILE.
+	 *
+	 * Taking the lock prevents possible compiler or processor
+	 * reordering of the writes performed before the final _flags
+	 * cleanup, making sure that we are done with the FILE before
+	 * it is considered available.
 	 */
-	ANDROID_MEMBAR_FULL();
-
+	STDIO_THREAD_LOCK();
 	fp->_flags = 0;		/* Release this FILE for reuse. */
+	STDIO_THREAD_UNLOCK();
 	FUNLOCKFILE(fp);
 	return (r);
 }
