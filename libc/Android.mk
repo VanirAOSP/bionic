@@ -181,12 +181,24 @@ libc_common_src_files := \
 	netbsd/nameser/ns_print.c \
 	netbsd/nameser/ns_samedomain.c \
 
-# cortex-a9 without neon
-ifneq ($(TARGET_CPU_VARIANT),tegra2)
-    libc_common_src_files += \
-        bionic/memchr.c \
-
-endif
+# Fortify implementations of libc functions.
+libc_common_src_files += \
+    bionic/__fgets_chk.cpp \
+    bionic/__memcpy_chk.cpp \
+    bionic/__memmove_chk.cpp \
+    bionic/__memset_chk.cpp \
+    bionic/__strcat_chk.cpp \
+    bionic/__strchr_chk.cpp \
+    bionic/__strcpy_chk.cpp \
+    bionic/__strlcat_chk.cpp \
+    bionic/__strlcpy_chk.cpp \
+    bionic/__strlen_chk.cpp \
+    bionic/__strncat_chk.cpp \
+    bionic/__strncpy_chk.cpp \
+    bionic/__strrchr_chk.cpp \
+    bionic/__umask_chk.cpp \
+    bionic/__vsnprintf_chk.cpp \
+    bionic/__vsprintf_chk.cpp \
 
 libc_bionic_src_files := \
     bionic/abort.cpp \
@@ -352,6 +364,8 @@ libc_upstream_netbsd_src_files := \
 # =========================================================
 ifeq ($(TARGET_ARCH),arm)
 libc_common_src_files += \
+	bionic/memmove.c.arm \
+	string/bcopy.c \
 	string/strncmp.c \
 	string/strncat.c \
 	string/strncpy.c \
