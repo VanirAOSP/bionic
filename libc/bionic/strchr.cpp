@@ -30,5 +30,12 @@
 #include <string.h>
 
 extern "C" char* strchr(const char* p, int ch) {
-  return __strchr_chk(p, ch, __BIONIC_FORTIFY_UNKNOWN_SIZE);
+  for (;; ++p) {
+    if (*p == static_cast<char>(ch)) {
+      return const_cast<char*>(p);
+    }
+    if (*p == '\0')
+      break;
+  }
+  return NULL;
 }
