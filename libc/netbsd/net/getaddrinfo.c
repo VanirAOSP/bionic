@@ -93,6 +93,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include "resolv_private.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -214,7 +215,7 @@ struct res_target {
 
 static int str2number(const char *);
 static int explore_fqdn(const struct addrinfo *, const char *,
-	const char *, struct addrinfo **, const char *iface);
+	const char *, struct addrinfo **, const char *iface, int mark);
 static int explore_null(const struct addrinfo *,
 	const char *, struct addrinfo **);
 static int explore_numeric(const struct addrinfo *, const char *,
@@ -410,11 +411,7 @@ android_getaddrinfo_proxy(
 {
 	int sock;
 	const int one = 1;
-	union {
-		struct sockaddr_un un;
-		struct sockaddr generic;
-	} proxy_addr;
-	const char* cache_mode = getenv("ANDROID_DNS_MODE");
+	struct sockaddr_un proxy_addr;
 	FILE* proxy = NULL;
 	int success = 0;
 
@@ -438,12 +435,12 @@ android_getaddrinfo_proxy(
 
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 	memset(&proxy_addr, 0, sizeof(proxy_addr));
-	proxy_addr.un.sun_family = AF_UNIX;
-	strlcpy(proxy_addr.un.sun_path, "/dev/socket/dnsproxyd",
-		sizeof(proxy_addr.un.sun_path));
+	proxy_addr.sun_family = AF_UNIX;
+	strlcpy(proxy_addr.sun_path, "/dev/socket/dnsproxyd",
+		sizeof(proxy_addr.sun_path));
 	if (TEMP_FAILURE_RETRY(connect(sock,
-				       &proxy_addr.generic,
-				       sizeof(proxy_addr.un))) != 0) {
+				       (const struct sockaddr*) &proxy_addr,
+				       sizeof(proxy_addr))) != 0) {
 		close(sock);
 		return EAI_NODATA;
 	}
@@ -581,12 +578,12 @@ int
 getaddrinfo(const char *hostname, const char *servname,
     const struct addrinfo *hints, struct addrinfo **res)
 {
-	return android_getaddrinfoforiface(hostname, servname, hints, NULL, res);
+	return android_getaddrinfoforiface(hostname, servname, hints, NULL, 0, res);
 }
 
 int
 android_getaddrinfoforiface(const char *hostname, const char *servname,
-    const struct addrinfo *hints, const char *iface, struct addrinfo **res)
+    const struct addrinfo *hints, const char *iface, int mark, struct addrinfo **res)
 {
 	struct addrinfo sentinel;
 	struct addrinfo *cur;
@@ -765,7 +762,7 @@ android_getaddrinfoforiface(const char *hostname, const char *servname,
 			pai->ai_protocol = ex->e_protocol;
 
 		error = explore_fqdn(pai, hostname, servname,
-			&cur->ai_next, iface);
+			&cur->ai_next, iface, mark);
 
 		while (cur && cur->ai_next)
 			cur = cur->ai_next;
@@ -798,7 +795,7 @@ android_getaddrinfoforiface(const char *hostname, const char *servname,
  */
 static int
 explore_fqdn(const struct addrinfo *pai, const char *hostname,
-    const char *servname, struct addrinfo **res, const char *iface)
+    const char *servname, struct addrinfo **res, const char *iface, int mark)
 {
 	struct addrinfo *result;
 	struct addrinfo *cur;
@@ -824,7 +821,7 @@ explore_fqdn(const struct addrinfo *pai, const char *hostname,
 		return 0;
 
 	switch (nsdispatch(&result, dtab, NSDB_HOSTS, "getaddrinfo",
-			default_dns_files, hostname, pai, iface)) {
+			default_dns_files, hostname, pai, iface, mark)) {
 	case NS_TRYAGAIN:
 		error = EAI_AGAIN;
 		goto free;
@@ -1868,19 +1865,19 @@ error:
 	free(elems);
 }
 
-static int _using_default_dns(const char *iface)
+static bool _using_default_dns(const char *iface)
 {
 	char buf[IF_NAMESIZE+1];
 	size_t if_len;
 
 	// common case
-	if (iface == NULL || *iface == '\0') return 1;
+	if (iface == NULL || *iface == '\0') return true;
 
 	if_len = _resolv_get_default_iface(buf, sizeof(buf));
-	if (if_len + 1 <= sizeof(buf)) {
-		if (strcmp(buf, iface) != 0) return 0;
+	if (if_len != 0 && if_len + 1 <= sizeof(buf)) {
+		if (strcmp(buf, iface) == 0) return true;
 	}
-	return 1;
+	return false;
 }
 
 /*ARGSUSED*/
@@ -1895,10 +1892,12 @@ _dns_getaddrinfo(void *rv, void	*cb_data, va_list ap)
 	struct res_target q, q2;
 	res_state res;
 	const char* iface;
+	int mark;
 
 	name = va_arg(ap, char *);
 	pai = va_arg(ap, const struct addrinfo *);
 	iface = va_arg(ap, char *);
+	mark = va_arg(ap, int);
 	//fprintf(stderr, "_dns_getaddrinfo() name = '%s'\n", name);
 
 	memset(&q, 0, sizeof(q));
@@ -1986,6 +1985,7 @@ _dns_getaddrinfo(void *rv, void	*cb_data, va_list ap)
 	 * and have a cache hit that would be wasted, so we do the rest there on miss
 	 */
 	res_setiface(res, iface);
+	res_setmark(res, mark);
 	if (res_searchN(name, &q, res) < 0) {
 		__res_put_state(res);
 		free(buf);

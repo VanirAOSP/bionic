@@ -188,6 +188,7 @@ libc_common_src_files += \
 	bionic/__memmove_chk.cpp \
 	bionic/__memset_chk.cpp \
 	bionic/__strcat_chk.cpp \
+	bionic/__strchr_chk.cpp \
 	bionic/__strcpy_chk.cpp \
 	bionic/__strlcat_chk.cpp \
 	bionic/__strlcpy_chk.cpp \
@@ -363,8 +364,6 @@ libc_upstream_netbsd_src_files := \
 # =========================================================
 ifeq ($(TARGET_ARCH),arm)
 libc_common_src_files += \
-	bionic/memmove.c.arm \
-	string/bcopy.c \
 	string/strncmp.c \
 	string/strncat.c \
 	string/strncpy.c \

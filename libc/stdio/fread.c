@@ -73,7 +73,8 @@ fread(void *buf, size_t size, size_t count, FILE *fp)
          */
 
         /* make sure stdio is set up */
-	__check_sdidinit();
+        if (!__sdidinit)
+            __sinit();
 
         fp->_r = 0;     /* largely a convenience for callers */
 
