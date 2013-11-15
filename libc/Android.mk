@@ -102,7 +102,6 @@ libc_common_src_files := \
 	bionic/ldexp.c \
 	bionic/lseek64.c \
 	bionic/md5.c \
-	bionic/memchr.c \
 	bionic/memmem.c \
 	bionic/memswap.c \
 	bionic/name_mem.c \
@@ -184,22 +183,22 @@ libc_common_src_files := \
 
 # Fortify implementations of libc functions.
 libc_common_src_files += \
-	bionic/__fgets_chk.cpp \
-	bionic/__memcpy_chk.cpp \
-	bionic/__memmove_chk.cpp \
-	bionic/__memset_chk.cpp \
-	bionic/__strcat_chk.cpp \
-	bionic/__strchr_chk.cpp \
-	bionic/__strcpy_chk.cpp \
-	bionic/__strlcat_chk.cpp \
-	bionic/__strlcpy_chk.cpp \
-	bionic/__strlen_chk.cpp \
-	bionic/__strncat_chk.cpp \
-	bionic/__strncpy_chk.cpp \
-	bionic/__strrchr_chk.cpp \
-	bionic/__umask_chk.cpp \
-	bionic/__vsnprintf_chk.cpp \
-	bionic/__vsprintf_chk.cpp \
+    bionic/__fgets_chk.cpp \
+    bionic/__memcpy_chk.cpp \
+    bionic/__memmove_chk.cpp \
+    bionic/__memset_chk.cpp \
+    bionic/__strcat_chk.cpp \
+    bionic/__strchr_chk.cpp \
+    bionic/__strcpy_chk.cpp \
+    bionic/__strlcat_chk.cpp \
+    bionic/__strlcpy_chk.cpp \
+    bionic/__strlen_chk.cpp \
+    bionic/__strncat_chk.cpp \
+    bionic/__strncpy_chk.cpp \
+    bionic/__strrchr_chk.cpp \
+    bionic/__umask_chk.cpp \
+    bionic/__vsnprintf_chk.cpp \
+    bionic/__vsprintf_chk.cpp \
 
 libc_bionic_src_files := \
     bionic/abort.cpp \
@@ -370,6 +369,7 @@ libc_common_src_files += \
 	string/strncpy.c \
 	bionic/strchr.cpp \
 	string/strrchr.c \
+	bionic/memchr.c \
 	bionic/memrchr.c \
 	string/index.c \
 	bionic/strnlen.c \
@@ -395,7 +395,8 @@ libc_common_src_files += \
 libc_static_common_src_files += \
     bionic/pthread.c.arm \
     bionic/pthread_create.cpp.arm \
-    bionic/pthread_key.cpp.arm
+    bionic/pthread_key.cpp.arm \
+
 endif # arm
 
 ifeq ($(TARGET_ARCH),x86)
