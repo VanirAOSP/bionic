@@ -102,6 +102,7 @@ libc_common_src_files := \
 	bionic/ldexp.c \
 	bionic/lseek64.c \
 	bionic/md5.c \
+	bionic/memchr.c \
 	bionic/memmem.c \
 	bionic/memswap.c \
 	bionic/name_mem.c \
@@ -369,7 +370,6 @@ libc_common_src_files += \
 	string/strncpy.c \
 	bionic/strchr.cpp \
 	string/strrchr.c \
-	bionic/memchr.c \
 	bionic/memrchr.c \
 	string/index.c \
 	bionic/strnlen.c \
@@ -396,6 +396,10 @@ libc_static_common_src_files += \
     bionic/pthread.c.arm \
     bionic/pthread_create.cpp.arm \
     bionic/pthread_key.cpp.arm \
+
+else
+libc_common_src_files += \
+	bionic/memchr.c \
 
 endif # arm
 
@@ -469,9 +473,11 @@ endif
 define libc-add-cpu-variant-src
 $(if $(filter true,$(_LIBC_ARCH_CPU_VARIANT_HAS_$(1))), \
 	, \
-     $(eval _LIBC_ARCH_CPU_VARIANT_HAS_$(1) := true) \
-     $(eval _LIBC_ARCH_CPU_VARIANT_SRC_FILE.$(1) := $(2)) \
-     $(eval _LIBC_ARCH_CPU_VARIANT_SRC_FILES += $(2)) \
+	$(eval _LIBC_ARCH_CPU_VARIANT_HAS_$(1) := true) \
+	$(if $(strip $(2)), \
+		$(eval _LIBC_ARCH_CPU_VARIANT_SRC_FILE.$(1) := $(2)) \
+		$(eval _LIBC_ARCH_CPU_VARIANT_SRC_FILES += $(2)), \
+	) \
 )
 endef
 
