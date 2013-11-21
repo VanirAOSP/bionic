@@ -261,14 +261,19 @@ size_t phdr_table_get_load_size(const Elf32_Phdr* phdr_table,
             max_vaddr = phdr->p_vaddr + phdr->p_memsz;
         }
     }
-
-    if (min_vaddr > max_vaddr) {
-        return 0;
+    if (!found_pt_load) {
+        min_vaddr = 0x00000000U;
     }
 
     min_vaddr = PAGE_START(min_vaddr);
     max_vaddr = PAGE_END(max_vaddr);
 
+    if (out_min_vaddr != NULL) {
+        *out_min_vaddr = min_vaddr;
+    }
+    if (out_max_vaddr != NULL) {
+        *out_max_vaddr = max_vaddr;
+    }
     return max_vaddr - min_vaddr;
 }
 
@@ -306,7 +311,8 @@ static Elf32_Addr is_prelinked(int fd, const char *name)
 // segments of a program header table. This is done by creating a
 // private anonymous mmap() with PROT_NONE.
 bool ElfReader::ReserveAddressSpace() {
-  load_size_ = phdr_table_get_load_size(phdr_table_, phdr_num_);
+  Elf32_Addr min_vaddr;
+  load_size_ = phdr_table_get_load_size(phdr_table_, phdr_num_, &min_vaddr);
   if (load_size_ == 0) {
     DL_ERR("\"%s\" has no loadable segments", name_);
     return false;
@@ -314,25 +320,20 @@ bool ElfReader::ReserveAddressSpace() {
 
   required_base_ = is_prelinked(fd_, name_);
 
+  uint8_t* addr = reinterpret_cast<uint8_t*>(min_vaddr);
   int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
-  if (required_base_ != 0)
+  if (required_base_ != 0) {
     mmap_flags |= MAP_FIXED;
-  void* start = mmap((void*)required_base_, load_size_, PROT_NONE, mmap_flags, -1, 0);
+    addr = (uint8_t*) required_base_;
+  }
+  void* start = mmap(addr, load_size_, PROT_NONE, mmap_flags, -1, 0);
   if (start == MAP_FAILED) {
     DL_ERR("couldn't reserve %d bytes of address space for \"%s\"", load_size_, name_);
     return false;
   }
 
   load_start_ = start;
-  load_bias_ = 0;
-
-  for (size_t i = 0; i < phdr_num_; ++i) {
-    const Elf32_Phdr* phdr = &phdr_table_[i];
-    if (phdr->p_type == PT_LOAD) {
-      load_bias_ = reinterpret_cast<Elf32_Addr>(start) - PAGE_START(phdr->p_vaddr);
-      break;
-    }
-  }
+  load_bias_ = reinterpret_cast<uint8_t*>(start) - reinterpret_cast<uint8_t*>(min_vaddr);
   return true;
 }
 
