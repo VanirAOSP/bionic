@@ -192,4 +192,9 @@ ENTRY(memset)
         strbcs      r1, [r0], #1
         ldmfd       sp!, {r0}
         bx          lr
+        .cfi_endproc
 END(memset)
+
+        .data
+error_string:
+        .string     "memset buffer overflow"
