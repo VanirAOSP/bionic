@@ -149,8 +149,10 @@
 #endif
 
 ENTRY(__memcpy_chk)
+        .cfi_startproc
         cmp         r2, r3
         bhi         __memcpy_chk_fail
+        .cfi_endproc
 
         // Fall through to memcpy...
 END(__memcpy_chk)
@@ -625,6 +627,7 @@ END(memcpy)
 #include "memcpy_base.S"
 
 ENTRY_PRIVATE(__memcpy_chk_fail)
+        .cfi_startproc
         // Preserve lr for backtrace.
         push    {lr}
         .save   {lr}
@@ -640,6 +643,7 @@ error_code:
         .word   BIONIC_EVENT_MEMCPY_BUFFER_OVERFLOW
 error_message:
         .word   error_string-(1b+8)
+        .cfi_endproc
 END(__memcpy_chk_fail)
 
         .data
