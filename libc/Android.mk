@@ -198,6 +198,8 @@ libc_common_src_files += \
     bionic/__umask_chk.cpp \
     bionic/__vsnprintf_chk.cpp \
     bionic/__vsprintf_chk.cpp \
+    bionic/__stpcpy_chk.cpp \
+    bionic/__stpncpy_chk.cpp \
 
 libc_bionic_src_files := \
     bionic/abort.cpp \
