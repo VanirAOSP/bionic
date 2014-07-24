@@ -238,8 +238,9 @@ typedef int64_t  intmax_t;
 #ifdef __STDINT_LIMITS
 #  define SIG_ATOMIC_MAX INT32_MAX
 #  define SIG_ATOMIC_MIN INT32_MIN
-
+#ifndef SIZE_MAX
 #  define SIZE_MAX UINT32_MAX
+#endif
 
 #  ifndef WCHAR_MAX /* These might also have been defined by <wchar.h>. */
 #    define WCHAR_MAX INT32_MAX
