@@ -1,8 +1,7 @@
 $(call libc-add-cpu-variant-src,MEMCPY,arch-arm/cortex-a9/bionic/memcpy.S)
 $(call libc-add-cpu-variant-src,MEMSET,arch-arm/cortex-a9/bionic/memset.S)
 ifeq ($(ARCH_ARM_HAVE_NEON),true)
-$(call libc-add-cpu-variant-src,MEMMOVE,arch-arm/bionic/memmove.S)
-$(call libc-add-cpu-variant-src,BCOPY) #included in memmove.S
+$(call libc-add-cpu-variant-src,MEMMOVE,arch-arm/cortex-a15/bionic/memmove.S)
 else
 $(call libc-add-cpu-variant-src,MEMMOVE,bionic/memmove.c.arm)
 $(call libc-add-cpu-variant-src,BCOPY,string/bcopy.c.arm)
