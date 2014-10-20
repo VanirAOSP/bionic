@@ -217,7 +217,7 @@ libm_common_src_files += fake_long_double.c
 
 # TODO: re-enable i387/e_sqrtf.S for x86, and maybe others.
 
-libm_common_cflags := -DFLT_EVAL_METHOD=0
+libm_common_cflags += -DFLT_EVAL_METHOD=0
 libm_common_includes := $(LOCAL_PATH)/upstream-freebsd/lib/msun/src/
 
 libm_arm_includes := $(LOCAL_PATH)/arm
@@ -240,6 +240,7 @@ libm_arm_src_files += \
     arm/s_floor.S \
     upstream-freebsd/lib/msun/src/s_cos.c \
     upstream-freebsd/lib/msun/src/s_sin.c
+libm_arm_cflags += -DQCOM_NEON_OPTIMIZATION -fno-if-conversion
 else
 ifeq ($(TARGET_CPU_VARIANT),$(filter $(TARGET_CPU_VARIANT),cortex-a15 krait))
 libm_arm_src_files += \
@@ -256,6 +257,7 @@ libm_arm_src_files += \
     arm/s_sin_fast.S \
     arm/s_cos_fast.S \
     arm/e_pow.S
+libm_arm_cflags += -DQCOM_NEON_OPTIMIZATION -fno-if-conversion
 libm_arm_cflags += -DLIBM_OPT_SIN_COS -DLIBM_OPT_EXP -DPRECISE_TRIGONOMETRIC -DKRAIT_NEON_OPTIMIZATION -fno-if-conversion
 libm_arm_asflags += -DFPU_VFPV4 -DLIBM_OPT_SIN_COS -DLIBM_OPT_EXP -DPRECISE_TRIGONOMETRIC
 else
@@ -267,6 +269,7 @@ libm_arm_src_files += \
     upstream-freebsd/lib/msun/src/s_sin.c
 endif
 endif
+
 
 ifeq ($(ARCH_ARM_HAVE_NEON),true)
   libm_arm_src_files += \
