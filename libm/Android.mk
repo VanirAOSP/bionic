@@ -240,7 +240,6 @@ libm_arm_src_files += \
     arm/s_floor.S \
     upstream-freebsd/lib/msun/src/s_cos.c \
     upstream-freebsd/lib/msun/src/s_sin.c
-libm_arm_cflags += -DQCOM_NEON_OPTIMIZATION -fno-if-conversion
 else
 ifeq ($(TARGET_CPU_VARIANT),$(filter $(TARGET_CPU_VARIANT),cortex-a15 krait))
 libm_arm_src_files += \
