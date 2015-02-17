@@ -55,11 +55,8 @@
 
 int mbsinit(const mbstate_t* ps) {
   return (ps == NULL || 
-#ifndef __LP64__
           ps->__seq32 == 0
-#else
-          (*(reinterpret_cast<const uint32_t*>(ps->__seq)) == 0)
-#endif
+          // (*(reinterpret_cast<const uint32_t*>(ps->__seq)) == 0)
           );
 }
 
