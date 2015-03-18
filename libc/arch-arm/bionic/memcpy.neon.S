@@ -27,7 +27,6 @@
    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
  */
 
 /*
@@ -39,11 +38,9 @@
     ARMv6 (ARMv7-a if using Neon)
     ARM state
     Unaligned accesses
-    LDRD/STRD support unaligned word accesses
 
  */
 
-#include <machine/cpu-features.h>
 #include <private/bionic_asm.h>
 
 	.syntax unified
@@ -250,9 +247,9 @@ ENTRY(memcpy)
 	vmov.f32	s0, s0
 #endif
 
-	/* SRC and DST have the same mutual 32-bit alignment, but we may
+	/* SRC and DST have the same mutual 64-bit alignment, but we may
 	   still need to pre-copy some bytes to get to natural alignment.
-	   We bring DST into full 64-bit alignment.  */
+	   We bring SRC and DST into full 64-bit alignment.  */
 	lsls	tmp2, dst, #29
 	beq	1f
 	rsbs	tmp2, tmp2, #0
@@ -351,7 +348,7 @@ ENTRY(memcpy)
 
 .Ltail63aligned:			/* Count in tmp2.  */
 	/* Copy up to 7 d-words of data.  Similar to Ltail63unaligned, but
-	   we know that the src and dest are 32-bit aligned so we can use
+	   we know that the src and dest are 64-bit aligned so we can use
 	   LDRD/STRD to improve efficiency.  */
 	/* TMP2 is now negative, but we don't care about that.  The bottom
 	   six bits still tell us how many bytes are left to copy.  */
@@ -611,4 +608,5 @@ ENTRY(memcpy)
 	ldr	tmp2, [sp], #FRAME_SIZE
 	bne	.Ltail63unaligned
 	bx	lr
+
 END(memcpy)
