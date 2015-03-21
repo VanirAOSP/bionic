@@ -31,28 +31,28 @@
 #include <linux/in6.h>
 
 #define IN6_IS_ADDR_UNSPECIFIED(a)	\
-	(((a)->s6_addr32[0] == 0) &&	\
-	 ((a)->s6_addr32[1] == 0) &&	\
-	 ((a)->s6_addr32[2] == 0) &&	\
-	 ((a)->s6_addr32[3] == 0))
+	((*(const uint32_t *)(const void *)(&(a)->s6_addr[0]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[4]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[8]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[12]) == 0))
 
 #define IN6_IS_ADDR_LOOPBACK(a)		\
-	(((a)->s6_addr32[0] == 0) &&	\
-	 ((a)->s6_addr32[1] == 0) &&	\
-	 ((a)->s6_addr32[2] == 0) &&	\
-	 ((a)->s6_addr32[3] == ntohl(1)))
+	((*(const uint32_t *)(const void *)(&(a)->s6_addr[0]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[4]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[8]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[12]) == ntohl(1)))
 
 #define IN6_IS_ADDR_V4COMPAT(a)		\
-	(((a)->s6_addr32[0] == 0) &&	\
-	 ((a)->s6_addr32[1] == 0) &&	\
-	 ((a)->s6_addr32[2] == 0) &&	\
-	 ((a)->s6_addr32[3] != 0) &&	\
-	 ((a)->s6_addr32[3] != ntohl(1)))
+	((*(const uint32_t *)(const void *)(&(a)->s6_addr[0]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[4]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[8]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[12]) != 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[12]) != ntohl(1)))
 
-#define IN6_IS_ADDR_V4MAPPED(a)		\
-	(((a)->s6_addr32[0] == 0) &&	\
-	 ((a)->s6_addr32[1] == 0) &&	\
-	 ((a)->s6_addr32[2] == ntohl(0x0000ffff)))
+#define IN6_IS_ADDR_V4MAPPED(a)		      \
+	((*(const uint32_t *)(const void *)(&(a)->s6_addr[0]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[4]) == 0) &&	\
+	 (*(const uint32_t *)(const void *)(&(a)->s6_addr[8]) == ntohl(0x0000ffff)))
 
 #define IN6_IS_ADDR_LINKLOCAL(a)	\
 	(((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0x80))
@@ -65,7 +65,7 @@
 	(((a)->s6_addr[0] & 0xfe) == 0xfc)
 
 #define IN6_IS_ADDR_MULTICAST(a)	\
-	((a)->s6_addr[0] == 0xff)
+	(((__const uint8_t *) (a))[0] == 0xff)
 
 
 #define IPV6_ADDR_SCOPE_NODELOCAL       0x01
