@@ -47,11 +47,19 @@ __LIBC_HIDDEN__ uint8_t mbstate_get_byte(const mbstate_t* ps, int n) {
 
 __LIBC_HIDDEN__ size_t reset_and_return_illegal(int _errno, mbstate_t* ps) {
   errno = _errno;
+#ifndef __LP64__
+  ps->__seq32 = 0;
+#else
   *(reinterpret_cast<uint32_t*>(ps->__seq)) = 0;
+#endif
   return __MB_ERR_ILLEGAL_SEQUENCE;
 }
 
 __LIBC_HIDDEN__ size_t reset_and_return(int _return, mbstate_t* ps) {
+#ifndef __LP64__
+  ps->__seq32 = 0;
+#else
   *(reinterpret_cast<uint32_t*>(ps->__seq)) = 0;
+#endif
   return _return;
 }
