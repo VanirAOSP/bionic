@@ -2178,8 +2178,10 @@ bool soinfo::LinkImage(const android_dlextinfo* extinfo) {
   if (has_text_relocations) {
     // Make segments writable to allow text relocations to work properly. We will later call
     // phdr_table_protect_segments() after all of them are applied and all constructors are run.
+#ifndef STE_SAMSUNG_HARDWARE
     DL_WARN("%s has text relocations. This is wasting memory and prevents "
             "security hardening. Please fix.", name);
+#endif
     if (phdr_table_unprotect_segments(phdr, phnum, load_bias) < 0) {
       DL_ERR("can't unprotect loadable segments for \"%s\": %s",
              name, strerror(errno));
