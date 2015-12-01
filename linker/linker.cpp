@@ -896,11 +896,16 @@ static std::vector<std::string> g_ld_all_shim_libs;
 
 static linked_list_t<const std::string> g_active_shim_libs;
 
-static void parse_LD_SHIM_LIBS(const char* path) {
-  parse_path(path, " :", &g_ld_all_shim_libs);
+static void reset_g_active_shim_libs(void) {
+  g_active_shim_libs.clear();
   for (const auto& pair : g_ld_all_shim_libs) {
     g_active_shim_libs.push_back(&pair);
   }
+}
+
+static void parse_LD_SHIM_LIBS(const char* path) {
+  parse_path(path, " :", &g_ld_all_shim_libs);
+  reset_g_active_shim_libs();
 }
 
 static bool shim_lib_matches(const char *shim_lib, const char *realpath) {
@@ -945,7 +950,7 @@ static bool shim_libs_for_each(const char *const path, F action) {
 // walk_dependencies_tree returns false if walk was terminated
 // by the action and true otherwise.
 template<typename F>
-static bool walk_dependencies_tree(soinfo* root_soinfos[], size_t root_soinfos_size, F action) {
+static bool walk_dependencies_tree(soinfo* root_soinfos[], size_t root_soinfos_size, bool do_shims, F action) {
   SoinfoLinkedList visit_list;
   SoinfoLinkedList visited;
 
@@ -969,7 +974,7 @@ static bool walk_dependencies_tree(soinfo* root_soinfos[], size_t root_soinfos_s
       visit_list.push_back(child);
     });
 
-    if (!shim_libs_for_each(si->get_realpath(), [&](soinfo* child) {
+    if (do_shims && !shim_libs_for_each(si->get_realpath(), [&](soinfo* child) {
         si->add_child(child);
         visit_list.push_back(child);
       })) {
@@ -986,7 +991,7 @@ static const ElfW(Sym)* dlsym_handle_lookup(soinfo* root, soinfo* skip_until,
   const ElfW(Sym)* result = nullptr;
   bool skip_lookup = skip_until != nullptr;
 
-  walk_dependencies_tree(&root, 1, [&](soinfo* current_soinfo) {
+  walk_dependencies_tree(&root, 1, false, [&](soinfo* current_soinfo) {
     if (skip_lookup) {
       skip_lookup = current_soinfo != skip_until;
       return true;
@@ -1565,6 +1570,7 @@ static bool find_libraries(soinfo* start_with, const char* const library_names[]
   walk_dependencies_tree(
       start_with == nullptr ? soinfos : &start_with,
       start_with == nullptr ? soinfos_count : 1,
+      true,
       [&] (soinfo* si) {
     local_group.push_back(si);
     return true;
@@ -1744,6 +1750,7 @@ soinfo* do_dlopen(const char* name, int flags, const android_dlextinfo* extinfo)
   }
 
   ProtectedDataGuard guard;
+  reset_g_active_shim_libs();
   soinfo* si = find_library(name, flags, extinfo);
   if (si != nullptr) {
     si->call_constructors();
