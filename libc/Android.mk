@@ -615,10 +615,11 @@ ifeq ($(BOARD_USES_LEGACY_MMAP),true)
   libc_common_cflags += -DLEGACY_MMAP
 endif
 
+libc_common_cflags += $(VANIR_BIONIC_FLAGS)
+
 # Define some common conlyflags
 libc_common_conlyflags := \
     -std=gnu99
-
 # Define some common cppflags
 libc_common_cppflags := \
     -std=gnu++11
