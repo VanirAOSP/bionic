@@ -16,4 +16,6 @@
 
 LOCAL_PATH := $(call my-dir)
 
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 include $(call all-subdir-makefiles)
