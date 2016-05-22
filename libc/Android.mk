@@ -652,6 +652,11 @@ endef
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES := bionic/__stack_chk_fail.cpp
 LOCAL_CFLAGS := $(libc_common_cflags) -fno-stack-protector
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
@@ -674,6 +679,11 @@ include $(BUILD_STATIC_LIBRARY)
 # ========================================================
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES := $(call all-c-files-under,tzcode)
 # tzcode doesn't include wcsftime, so we use the OpenBSD one.
@@ -715,6 +725,11 @@ include $(BUILD_STATIC_LIBRARY)
 # ========================================================
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES := \
     $(call all-c-files-under,dns) \
@@ -765,6 +780,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES := $(libc_upstream_freebsd_src_files)
 LOCAL_CFLAGS := \
     $(libc_common_cflags) \
@@ -798,6 +818,11 @@ include $(BUILD_STATIC_LIBRARY)
 # automatically included.
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES := $(libc_upstream_netbsd_src_files)
 LOCAL_CFLAGS := \
@@ -836,6 +861,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES := $(libc_upstream_openbsd_ndk_src_files)
 LOCAL_CLANG := $(use_clang)
 
@@ -873,6 +903,11 @@ include $(BUILD_STATIC_LIBRARY)
 # automatically included.
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES := $(libc_upstream_openbsd_src_files)
 LOCAL_CLANG := $(use_clang)
@@ -913,6 +948,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES_32 := $(libc_upstream_openbsd_gdtoa_src_files_32)
 LOCAL_SRC_FILES_64 := $(libc_upstream_openbsd_gdtoa_src_files_64)
 LOCAL_CLANG := $(use_clang)
@@ -947,6 +987,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES := $(libc_bionic_src_files)
 LOCAL_CFLAGS := $(libc_common_cflags) \
     -Wframe-larger-than=2048 \
@@ -974,6 +1019,11 @@ include $(BUILD_STATIC_LIBRARY)
 # ========================================================
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES := $(libc_bionic_ndk_src_files)
 LOCAL_CFLAGS := $(libc_common_cflags) \
@@ -1023,6 +1073,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES := $(libc_pthread_src_files)
 LOCAL_CFLAGS := $(libc_common_cflags) \
     -Wframe-larger-than=2048 \
@@ -1046,6 +1101,11 @@ include $(BUILD_STATIC_LIBRARY)
 # ========================================================
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES := $(libc_cxa_src_files)
 LOCAL_CFLAGS := $(libc_common_cflags) \
@@ -1078,6 +1138,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES_$(TARGET_ARCH) := $(call all-S-files-under,arch-$(TARGET_ARCH)/syscalls)
 ifdef TARGET_2ND_ARCH
 LOCAL_SRC_FILES_$(TARGET_2ND_ARCH) := $(call all-S-files-under,arch-$(TARGET_2ND_ARCH)/syscalls)
@@ -1101,6 +1166,11 @@ include $(BUILD_STATIC_LIBRARY)
 # ========================================================
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES_arm := arch-arm/bionic/__aeabi.c
 LOCAL_MODULE := libc_aeabi
@@ -1127,6 +1197,11 @@ include $(BUILD_STATIC_LIBRARY)
 # ========================================================
 
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_MODULE := libc_ndk
 LOCAL_CLANG := $(use_clang)
@@ -1187,6 +1262,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES := $(libc_common_src_files)
 LOCAL_CFLAGS := $(libc_common_cflags)
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
@@ -1240,6 +1320,11 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_SRC_FILES := \
     $(libc_arch_static_src_files) \
     bionic/libc_init_static.cpp
@@ -1274,6 +1359,11 @@ LOCAL_SRC_FILES := $(libc_malloc_src)
 LOCAL_CFLAGS := $(libc_common_cflags) \
     -fvisibility=hidden \
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
 LOCAL_C_INCLUDES := $(libc_common_c_includes)
@@ -1290,6 +1380,11 @@ include $(BUILD_STATIC_LIBRARY)
 # libc.a
 # ========================================================
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_SRC_FILES := \
     $(libc_arch_static_src_files) \
@@ -1325,6 +1420,11 @@ include $(BUILD_STATIC_LIBRARY)
 # libc.so
 # ========================================================
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_CFLAGS := $(libc_common_cflags)
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
@@ -1417,6 +1517,11 @@ ifneq ($(TARGET_BUILD_VARIANT),user)
 # ========================================================
 include $(CLEAR_VARS)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_CFLAGS := $(libc_common_cflags)
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
@@ -1463,6 +1568,11 @@ include $(BUILD_SHARED_LIBRARY)
 # libc_malloc_debug_qemu.so
 # ========================================================
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
 
 LOCAL_CFLAGS := \
     $(libc_common_cflags) \
@@ -1514,6 +1624,11 @@ LOCAL_C_INCLUDES := $(libc_common_c_includes) bionic/libstdc++/include
 LOCAL_CFLAGS := $(libc_common_cflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
 
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 # TODO: This is to work around b/19059885. Remove after root cause is fixed
 LOCAL_LDFLAGS_arm := -Wl,--hash-style=both
 LOCAL_LDFLAGS_x86 := -Wl,--hash-style=both
@@ -1531,6 +1646,12 @@ include $(BUILD_SHARED_LIBRARY)
 # libstdc++.a
 # ========================================================
 include $(CLEAR_VARS)
+
+# ==============
+# VANIR_FLAGS
+# ==============
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 LOCAL_C_INCLUDES := $(libc_common_c_includes) bionic/libstdc++/include
 LOCAL_CFLAGS := $(libc_common_cflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
