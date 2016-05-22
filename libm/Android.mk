@@ -1,6 +1,8 @@
 ifneq ($(TARGET_USE_PRIVATE_LIBM),true)
 LOCAL_PATH:= $(call my-dir)
 
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 bionic_coverage := false
 
 ifneq (,$(filter $(TARGET_ARCH),x86 x86_64))
