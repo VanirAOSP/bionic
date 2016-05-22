@@ -1,5 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 
+LOCAL_CFLAGS += $(VANIR_BIONIC_FLAGS)
+
 bionic_coverage := false
 
 # Make everything depend on any changes to included makefiles.
