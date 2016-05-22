@@ -1,5 +1,10 @@
 LOCAL_PATH := $(call my-dir)
 
+ifeq ($(USE_O3),true)
+LOCAL_CFLAGS += \
+        -O3
+endif
+
 bionic_coverage := false
 
 # Make everything depend on any changes to included makefiles.

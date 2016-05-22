@@ -1,6 +1,11 @@
 ifneq ($(TARGET_USE_PRIVATE_LIBM),true)
 LOCAL_PATH:= $(call my-dir)
 
+ifeq ($(USE_O3),true)
+LOCAL_CFLAGS += \
+        -O3
+endif
+
 bionic_coverage := false
 
 ifneq (,$(filter $(TARGET_ARCH),x86 x86_64))
