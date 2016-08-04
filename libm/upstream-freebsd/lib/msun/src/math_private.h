@@ -781,7 +781,21 @@ long double __kernel_tanl(long double, long double, int);
 
 #define __set_errno(val) (errno = (val))
 
-#define __FLT(x) (*(unsigned *)&(x))
+//helper by nuclearmistake to kick punning in the teeth
+#define FIX_ALIASING(tIN, tOUT, x) \
+  union __u{\
+    tIN *indata; \
+    tOUT *outdata; \
+  };\
+  union __u u; \
+  u.indata = (tIN*)(&x)
+#define FIX_ALIASING_RETURN(tIN, tOUT, x) \
+  FIX_ALIASING(tIN,tOUT,x); \
+  return (tOUT)*((tOUT*)(u.outdata))
+#define FIX_ALIASING_SET_OUT(tIN, tOUT, x, y) \
+  FIX_ALIASING(tIN, tOUT, x); \
+  *(u.outdata) = y
+
 #if defined(__ARM_BIG_ENDIAN) || defined(__BIG_ENDIAN)
 #  define __LO(x) (*(1 + (unsigned *)&(x)))
 #  define __HI(x) (*(unsigned *)&(x))
@@ -791,8 +805,8 @@ long double __kernel_tanl(long double, long double, int);
 #endif /* !defined(__ARM_BIG_ENDIAN) && !defined(__BIG_ENDIAN) */
 
 // FIXME: Implement these without type punning.
-static __inline unsigned int fai(float f) { return __FLT(f); }
-static __inline float fhex(unsigned int n) { float f; __FLT(f) = n; return f; }
+static __inline unsigned int fai(float f) { FIX_ALIASING_RETURN(float, unsigned int, f); }
+static __inline float fhex(unsigned int n) { float f; FIX_ALIASING_SET_OUT(float, unsigned int, f, n); return f; }
 
 #define CLEARBOTTOMHALF(x) fhex((fai(x) + 0x00000800) & 0xFFFFF000)
 
