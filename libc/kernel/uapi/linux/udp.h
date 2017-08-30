@@ -19,7 +19,7 @@
 #ifndef _UAPI_LINUX_UDP_H
 #define _UAPI_LINUX_UDP_H
 #include <linux/types.h>
-struct udphdr {
+struct __kernel_udphdr {
 /* WARNING: DO NOT EDIT, AUTO-GENERATED CODE - SEE TOP FOR INSTRUCTIONS */
   __be16 source;
   __be16 dest;
@@ -36,4 +36,6 @@ struct udphdr {
 #define UDP_ENCAP_ESPINUDP 2
 #define UDP_ENCAP_L2TPINUDP 3
 /* WARNING: DO NOT EDIT, AUTO-GENERATED CODE - SEE TOP FOR INSTRUCTIONS */
+#define UDP_ENCAP_GTP0 4
+#define UDP_ENCAP_GTP1U 5
 #endif

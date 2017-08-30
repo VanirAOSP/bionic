@@ -60,20 +60,43 @@
 
 #include <private/bionic_asm.h>
 
-#define dstin	x0
-#define val	x1
-#define valw	w1
-#define count	x2
-#define dst	x3
-#define dstend	x4
-#define tmp1	x5
-#define tmp1w	w5
-#define tmp2	x6
-#define tmp2w	w6
-#define zva_len x7
-#define zva_lenw w7
+/* By default we assume that the DC instruction can be used to zero
+   data blocks more efficiently.  In some circumstances this might be
+   unsafe, for example in an asymmetric multiprocessor environment with
+   different DC clear lengths (neither the upper nor lower lengths are
+   safe to use).
+
+   If code may be run in a virtualized environment, then define
+   MAYBE_VIRT.  This will cause the code to cache the system register
+   values rather than re-reading them each call.  */
+
+#define dstin		x0
+#define val		x1
+#define valw		w1
+#define count		x2
+#define dst 		x3
+#define dstend		x4
+#define tmp1		x5
+#define tmp1w		w5
+#define tmp2		x6
+#define tmp2w		w6
+#define zva_len		x7
+#define zva_lenw	w7
 
 #define L(l) .L ## l
+
+ENTRY(__memset_chk)
+  cmp count, dst
+  bls memset
+
+  // Preserve for accurate backtrace.
+  stp x29, x30, [sp, -16]!
+  .cfi_def_cfa_offset 16
+  .cfi_rel_offset x29, 0
+  .cfi_rel_offset x30, 8
+
+  bl __memset_chk_fail
+END(__memset_chk)
 
 ENTRY(memset)
 

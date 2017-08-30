@@ -89,71 +89,11 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <stdint.h>
-
 #include "charclass.h"
 
 #define	RANGE_MATCH	1
 #define	RANGE_NOMATCH	0
 #define	RANGE_ERROR	(-1)
-
-static unsigned int
-utf8_len(const char *s)
-{
-    const unsigned char *b = (const unsigned char *)s;
-    unsigned int len = 1;
-    unsigned char c;
-
-    if ((b[0] & 0xc0) != 0xc0) {
-        return 1;
-    }
-    c = b[0] << 1;
-    while (len < 6 && (c & 0x80)) {
-        if ((b[len] & 0xc0) != 0x80) {
-            return 1;
-        }
-        c <<= 1;
-        ++len;
-    }
-
-    return len;
-}
-
-static void
-utf8_inc(const char **s)
-{
-    *s += utf8_len(*s);
-}
-
-static uint32_t
-utf8_get_inc(const char **s)
-{
-    unsigned int len = utf8_len(*s);
-    const unsigned char *b = (const unsigned char *)(*s);
-    unsigned int n;
-    uint32_t ch;
-
-    *s += len;
-
-    if (len == 1) {
-        return b[0];
-    }
-
-    ch = b[0] & (0xff >> len);
-    for (n = 1; n < len; ++n) {
-        ch <<= 6;
-        ch |= (b[n] & 0x3f);
-    }
-
-    return ch;
-}
-
-static uint32_t
-utf8_get(const char *s)
-{
-    const char *tmp = s;
-    return utf8_get_inc(&tmp);
-}
 
 static int
 classmatch(const char *pattern, char test, int foldcase, const char **ep)
@@ -209,7 +149,7 @@ static int fnmatch_ch(const char **pattern, const char **string, int flags)
     const int escape = !(flags & FNM_NOESCAPE);
     const int slash = !!(flags & FNM_PATHNAME);
     int result = FNM_NOMATCH;
-    uint32_t startch, endch, compch;
+    const char *startch;
     int negate;
 
     if (**pattern == '[')
@@ -230,7 +170,7 @@ static int fnmatch_ch(const char **pattern, const char **string, int flags)
             if (**pattern == ']') {
                 ++*pattern;
                 /* XXX: Fix for MBCS character width */
-                utf8_inc(string);
+                ++*string;
                 return (result ^ negate);
             }
 
@@ -260,13 +200,10 @@ leadingclosebrace:
              * "x-]" is not allowed unless escaped ("x-\]")
              * XXX: Fix for locale/MBCS character width
              */
-            startch = utf8_get_inc(pattern);
-            compch = utf8_get(*string);
-            if (((*pattern)[0] == '-') && ((*pattern)[1] != ']'))
+            if (((*pattern)[1] == '-') && ((*pattern)[2] != ']'))
             {
-                *pattern += 1;
-                if (escape && **pattern == '\\')
-                    *pattern += 1;
+                startch = *pattern;
+                *pattern += (escape && ((*pattern)[2] == '\\')) ? 3 : 2;
 
                 /* NOT a properly balanced [expr] pattern, EOS terminated 
                  * or ranges containing a slash in FNM_PATHNAME mode pattern
@@ -275,35 +212,32 @@ leadingclosebrace:
                 if (!**pattern || (slash && (**pattern == '/')))
                     break;
 
-                endch = utf8_get_inc(pattern);
-
-                /* Refuse to attempt collation for non-ASCII chars */
-                if (startch >= 0x80 || endch >= 0x80)
-                    continue;
-
                 /* XXX: handle locale/MBCS comparison, advance by MBCS char width */
-                if ((compch >= startch) && (compch <= endch))
+                if ((**string >= *startch) && (**string <= **pattern))
                     result = 0;
-                else if (nocase && (isupper(compch) ||
-			    isupper(startch) ||
-                            isupper(endch))
-                            && (tolower(compch) >=
-			        tolower(startch))
-                            && (tolower(compch) <=
-				tolower(endch)))
+                else if (nocase && (isupper((unsigned char)**string) ||
+			    isupper((unsigned char)*startch) ||
+                            isupper((unsigned char)**pattern))
+                            && (tolower((unsigned char)**string) >=
+			        tolower((unsigned char)*startch)) 
+                            && (tolower((unsigned char)**string) <=
+				tolower((unsigned char)**pattern)))
                     result = 0;
 
+                ++*pattern;
                 continue;
             }
 
             /* XXX: handle locale/MBCS comparison, advance by MBCS char width */
-            if (compch == startch)
+            if ((**string == **pattern))
                 result = 0;
-            else if (nocase && (isupper(compch) ||
-			    isupper(startch))
-                            && (tolower(compch) ==
-				tolower(startch)))
+            else if (nocase && (isupper((unsigned char)**string) ||
+			    isupper((unsigned char)**pattern))
+                            && (tolower((unsigned char)**string) ==
+				tolower((unsigned char)**pattern)))
                 result = 0;
+
+            ++*pattern;
         }
 
         /* NOT a properly balanced [expr] pattern; Rewind
@@ -324,7 +258,7 @@ leadingclosebrace:
     }
 
     /* XXX: handle locale/MBCS comparison, advance by the MBCS char width */
-    if (utf8_get(*string) == utf8_get(*pattern))
+    if (**string == **pattern)
         result = 0;
     else if (nocase && (isupper((unsigned char)**string) ||
 		    isupper((unsigned char)**pattern))
@@ -338,8 +272,8 @@ leadingclosebrace:
         return result;
 
 fnmatch_ch_success:
-    utf8_inc(pattern);
-    utf8_inc(string);
+    ++*pattern;
+    ++*string;
     return result;
 }
 

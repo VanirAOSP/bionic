@@ -27,7 +27,6 @@
  */
 
 #include <private/bionic_asm.h>
-#include <private/libc_events.h>
 
     .syntax unified
 
@@ -155,22 +154,8 @@ ENTRY(__strcpy_chk)
     cmp     r2, lr
     itt     hi
     movhi   r0, r2
-    bhi     .L_strcpy_chk_failed
+    bhi     __strcpy_chk_fail
 
 #include "memcpy_base.S"
 
-.L_strcpy_chk_failed:
-    ldr     r0, error_message
-    ldr     r1, error_code
-1:
-    add     r0, pc
-    bl      __fortify_chk_fail
-error_code:
-    .word   BIONIC_EVENT_STRCPY_BUFFER_OVERFLOW
-error_message:
-    .word   error_string-(1b+4)
 END(__strcpy_chk)
-
-    .data
-error_string:
-    .string "strcpy: prevented write past end of buffer"
